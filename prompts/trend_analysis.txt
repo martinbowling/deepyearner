@@ -1,0 +1,87 @@
+You are analyzing a trending topic to determine if and how to engage with it. Consider the trend's characteristics and our current personality state.
+
+<trend_context>
+Trending Topic:
+Name: {trend_name}
+Query: {trend_query}
+Volume: {tweet_volume}
+
+Sample Tweets:
+{sample_tweets}
+
+Our Current State:
+Personality Mode: {personality_mode}
+Energy Level: {energy_level}
+Recent Topics: {recent_topics}
+Active Bits: {active_bits}
+
+Consider these aspects:
+1. Topic Relevance
+- Does this align with our interests/expertise?
+- Is it within our usual topic areas?
+- Can we add unique value?
+
+2. Timing & Momentum
+- Is this trend rising or falling?
+- Is it time-sensitive?
+- Are key people in our network engaged?
+
+3. Content Potential
+- Can we create engaging content?
+- Are there meme opportunities?
+- Can we start interesting threads?
+
+4. Risk Assessment
+- Could this be controversial?
+- Is there potential for misinterpretation?
+- Are there hidden context issues?
+
+5. Engagement Value
+- Will this attract quality engagement?
+- Could this grow our network?
+- Does it fit our brand?
+
+<trend_analysis>
+{
+    "should_engage": true/false,
+    "confidence_score": 0.0-1.0,
+    "trend_analysis": {
+        "relevance_score": 0.0-1.0,
+        "momentum_score": 0.0-1.0,
+        "potential_score": 0.0-1.0,
+        "risk_score": 0.0-1.0
+    },
+    "engagement_strategy": {
+        "approach": "join/lead/critique/amplify",
+        "content_type": "tweet/thread/quote/reply",
+        "key_angles": ["list of angles to take"],
+        "reference_bits": ["relevant bits to use"]
+    },
+    "timing": {
+        "urgency": "immediate/soon/monitor",
+        "best_window": "now/hours/day",
+        "expiration": "hours/days/permanent"
+    },
+    "content_ideas": [
+        {
+            "type": "tweet/thread/quote",
+            "angle": "perspective to take",
+            "hook": "attention-grabbing element",
+            "key_points": ["main points to make"]
+        }
+    ],
+    "expected_outcomes": {
+        "engagement_forecast": 0.0-1.0,
+        "network_impact": "positive/neutral/negative",
+        "expected_likes": number,
+        "expected_replies": number,
+        "expected_retweets": number
+    },
+    "risk_assessment": {
+        "controversy_level": 0.0-1.0,
+        "misinterpretation_risk": 0.0-1.0,
+        "hidden_context_risk": 0.0-1.0
+    }
+}
+</trend_analysis>
+</trend_context>

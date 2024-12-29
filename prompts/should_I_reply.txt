@@ -1,0 +1,102 @@
+You will analyze a tweet interaction and determine if and how we should engage. This could be either a reply to our tweet or a new tweet we're considering engaging with.
+
+<context>
+Tweet Type: {tweet_type} (reply_to_us/new_tweet)
+Tweet Content: {tweet_content}
+Author: {author_info}
+Tweet Stats: {tweet_stats}
+Posted At: {created_at}
+
+Our Tweet Context (if reply_to_us):
+Original Tweet: {our_tweet}
+Current Engagement: {engagement_metrics}
+Conversation Thread: {conversation_history}
+
+Author Analysis:
+- Follower Count: {follower_count}
+- Following Count: {following_count}
+- Mutual Status: {is_mutual}
+- Previous Interactions: {interaction_history}
+- Engagement Rate: {engagement_rate}
+
+Timeline Context:
+Current Mode: {our_current_mode}
+Energy Level: {our_energy_level}
+Recent Topics: {recent_topics}
+Network Vibe: {network_mood}
+Active Bits: {active_bits}
+
+Consider these aspects carefully:
+
+1. Content Analysis:
+- Sentiment: Is it positive/neutral/negative?
+- Intent: Question/Statement/Joke/Criticism?
+- Topic Relevance: Does it align with our interests/expertise?
+- Meme Potential: Can we add humor/value?
+
+2. Author Relationship:
+- Mutual Engagement: How often do we interact?
+- Response History: How have they engaged with us before?
+- Network Overlap: Do we share community members?
+- Author's Recent Activity: Are they in a conversation mood?
+
+3. Timing & Context:
+- Current Timeline Vibe: Does this fit our flow?
+- Conversation Stage: Early/Mid/Late in the discussion?
+- Topic Freshness: Is this still relevant?
+- Network Activity: Is our audience active now?
+
+4. Strategic Value:
+- Growth Potential: Could this lead to meaningful connections?
+- Content Opportunity: Can we create valuable content?
+- Community Building: Does this strengthen our network?
+- Brand Alignment: Does this fit our personality?
+
+5. Risk Assessment:
+- Controversy Level: Could this spark unwanted drama?
+- Misinterpretation Risk: Could our response be misconstrued?
+- Engagement Quality: Is this likely to attract quality interaction?
+- Resource Investment: Is this worth our time/energy?
+
+<decision>
+{
+    "should_engage": true/false,
+    "confidence_score": 0.0-1.0,
+    "action": {
+        "type": "reply/quote/like/ignore",
+        "priority": "immediate/scheduled/conditional",
+        "wait_time_minutes": number,
+        "conditions": ["list of conditions if any"]
+    },
+    "engagement_strategy": {
+        "tone": "witty/supportive/informative/playful/serious",
+        "approach": "direct/indirect/quote_with_comment/thread",
+        "key_elements": ["list of elements to include"],
+        "reference_bits": ["relevant running bits to incorporate"]
+    },
+    "context_analysis": {
+        "tweet_vibe": "blessed/cursed/chaotic/chill/hype",
+        "conversation_stage": "early/mid/late",
+        "network_activity": "high/medium/low",
+        "timing_quality": 0.0-1.0
+    },
+    "risk_assessment": {
+        "controversy_potential": 0.0-1.0,
+        "misinterpretation_risk": 0.0-1.0,
+        "engagement_quality": 0.0-1.0,
+        "resource_cost": "low/medium/high"
+    },
+    "expected_outcomes": {
+        "engagement_forecast": 0.0-1.0,
+        "relationship_impact": "strengthen/neutral/risky",
+        "content_value": "high/medium/low",
+        "growth_potential": 0.0-1.0
+    },
+    "reasoning": {
+        "key_factors": ["list of main decision factors"],
+        "opportunities": ["list of potential benefits"],
+        "concerns": ["list of potential risks"],
+        "final_thoughts": "detailed explanation of decision"
+    }
+}
+</decision>

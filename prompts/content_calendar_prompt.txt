@@ -1,0 +1,147 @@
+Plan and manage posting schedule, considering timeline activity patterns, content variety, and engagement optimization. Balance spontaneity with structured content delivery while maintaining natural posting rhythms.
+Input:
+
+Posting History: [Recent post timing/performance]
+Timeline Activity: [Peak hours/dead zones]
+Content Pipeline: [Planned/draft content]
+Performance Metrics: [Engagement patterns]
+
+Analysis Steps:
+
+Rhythm Analysis:
+
+
+Map peak engagement times
+Track posting intervals
+Monitor content spacing
+Analyze audience availability
+
+
+Content Mix Planning:
+
+
+Balance content types
+Distribute energy levels
+Space similar content
+Plan theme progression
+
+
+Pipeline Management:
+
+
+Organize content queue
+Schedule key posts
+Reserve spontaneity windows
+Manage content freshness
+
+
+Performance Optimization:
+
+
+Track timing success
+Monitor format fatigue
+Adjust for real-time events
+Optimize spacing
+
+<content_calendar>
+{
+"timestamp": "current_time",
+"posting_analytics": {
+"optimal_windows": [
+{
+"time_range": "hour_range",
+"engagement_level": "high/medium/low",
+"audience_activity": "peak/active/quiet",
+"competition_level": "high/medium/low"
+}
+],
+"rhythm_metrics": {
+"ideal_frequency": "posts_per_day",
+"minimum_spacing": "minutes",
+"maximum_spacing": "hours",
+"current_pattern": "ahead/behind/optimal"
+}
+},
+"content_queue": {
+"planned_posts": [
+{
+"content_id": "",
+"type": "shitpost/take/thread/meme",
+"scheduled_time": "timestamp",
+"flexibility": "fixed/flexible/spontaneous",
+"content": "",
+"fallback_options": []
+}
+],
+"content_balance": {
+"current_mix": {
+"shitposts": 0.0,
+"takes": 0.0,
+"threads": 0.0,
+"memes": 0.0
+},
+"target_mix": {
+"shitposts": 0.0,
+"takes": 0.0,
+"threads": 0.0,
+"memes": 0.0
+},
+"adjustment_needed": true/false
+}
+},
+"scheduling_strategy": {
+"immediate_window": {
+"should_post": true/false,
+"recommended_content": "",
+"timing": "timestamp",
+"reasoning": ""
+},
+"next_24_hours": {
+"planned_slots": [],
+"flexible_windows": [],
+"reserved_spontaneity": []
+},
+"content_spacing": {
+"similar_content_buffer": "hours",
+"energy_level_distribution": "balanced/front-loaded/back-loaded",
+"theme_spacing": "hours"
+}
+},
+"performance_tracking": {
+"timing_effectiveness": {
+"best_times": [],
+"worst_times": [],
+"trending_windows": []
+},
+"format_performance": {
+"high_performing": [],
+"needs_rest": [],
+"test_candidates": []
+}
+},
+"adaptive_adjustments": {
+"real_time_factors": {
+"event_impacts": [],
+"mood_shifts": [],
+"trending_topics": []
+},
+"schedule_modifications": {
+"accelerate": [],
+"delay": [],
+"reorder": []
+}
+},
+"health_metrics": {
+"posting_health": "optimal/high/moderate/low",
+"variety_score": 0.0,
+"rhythm_consistency": 0.0,
+"engagement_trends": "improving/stable/declining"
+},
+"next_actions": {
+"immediate_posts": [],
+"schedule_updates": [],
+"content_needs": [],
+"review_time": "timestamp"
+}
+}
+</content_calendar>

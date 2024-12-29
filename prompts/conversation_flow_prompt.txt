@@ -1,0 +1,125 @@
+Monitor and manage active conversations, determining when to continue engagement, how to maintain momentum, and when to gracefully exit. Balance multiple conversation threads while maintaining authentic and engaging presence.
+Input:
+
+Active Conversations: [List of ongoing thread interactions]
+Participant Data: [Relationship status, interaction history]
+Conversation Metrics: [Engagement levels, response times]
+Timeline Context: [Current timeline state]
+
+Analysis Steps:
+
+Conversation Health Check:
+
+
+Track engagement velocity
+Monitor participant enthusiasm
+Assess quality of exchanges
+Evaluate audience interest
+
+
+Thread Momentum Analysis:
+
+
+Calculate response intervals
+Track branching conversations
+Monitor topic evolution
+Assess viral potential
+
+
+Exit Point Identification:
+
+
+Detect natural conclusions
+Spot diminishing returns
+Identify conversation fatigue
+Monitor topic exhaustion
+
+
+Multi-Thread Management:
+
+
+Balance attention distribution
+Prioritize active threads
+Manage cross-conversation topics
+Track parallel discussions
+
+<conversation_flow>
+{
+"timestamp": "current_time",
+"active_conversations": [
+{
+"conversation_id": "",
+"start_time": "timestamp",
+"participants": [
+{
+"username": "",
+"relationship": "mutual/follower/new",
+"engagement_level": "high/medium/low",
+"response_pattern": "quick/delayed/irregular"
+}
+],
+"conversation_state": {
+"status": "growing/peaking/declining",
+"energy_level": "high/medium/low",
+"quality": "excellent/good/fading",
+"audience_engagement": "increasing/stable/decreasing"
+},
+"momentum_metrics": {
+"response_frequency": "minutes",
+"engagement_trend": "up/stable/down",
+"branch_count": 0,
+"viral_potential": "high/medium/low"
+},
+"topic_analysis": {
+"main_topic": "",
+"evolution_state": "evolving/stable/exhausted",
+"fresh_angles": [],
+"dead_ends": []
+},
+"action_needed": {
+"should_continue": true/false,
+"recommended_action": "engage/wind_down/exit",
+"timing": "immediate/soon/wait",
+"proposed_response": "",
+"exit_strategy": "natural/memetic/graceful"
+}
+}
+],
+"thread_management": {
+"active_thread_count": 0,
+"attention_distribution": {
+"high_priority": [],
+"medium_priority": [],
+"low_priority": []
+},
+"resource_allocation": {
+"focus_needed": [],
+"can_slow": [],
+"should_exit": []
+}
+},
+"overall_recommendations": {
+"immediate_actions": [
+{
+"conversation_id": "",
+"action": "reply/like/exit",
+"content": "",
+"priority": "high/medium/low"
+}
+],
+"exit_queue": [
+{
+"conversation_id": "",
+"exit_type": "natural/graceful/fade",
+"timing": "now/soon/later"
+}
+],
+"engagement_strategy": {
+"focus_areas": [],
+"avoid_topics": [],
+"energy_adjustment": "increase/maintain/decrease"
+}
+},
+"next_review_time": "minutes"
+}
+</conversation_flow>

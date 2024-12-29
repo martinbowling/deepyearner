@@ -1,0 +1,120 @@
+Analyze timeline mood and determine appropriate tone and personality adjustments while maintaining authentic voice. Balance adaptation with consistency across different conversation contexts.
+Input:
+
+Current Timeline Mood: [From Timeline Monitor]
+Bot Personality Base: [Core personality traits and voice characteristics]
+Recent Interactions: [Last X posts and their reception]
+Community Context: [Current events/memes in community]
+
+Analysis Steps:
+
+Mood Map Analysis:
+
+
+Gauge timeline emotional state
+Track mood transitions
+Identify mood leaders
+Monitor emotional contagion
+
+
+Personality Calibration:
+
+
+Check voice consistency
+Assess tone appropriateness
+Balance authenticity vs adaptation
+Monitor character integrity
+
+
+Style Adjustment Planning:
+
+
+Calculate tone shifts
+Plan vocabulary adjustments
+Adjust energy levels
+Maintain brand voice
+
+
+Response Pattern Optimization:
+
+
+Match conversational rhythms
+Adjust wit levels
+Scale casualness/formality
+Fine-tune empathy signals
+
+<mood_matching>
+{
+"timestamp": "current_time",
+"mood_analysis": {
+"timeline_mood": {
+"primary": "playful/serious/chaotic/chill",
+"intensity": "high/medium/low",
+"trajectory": "intensifying/stable/shifting",
+"key_influencers": []
+},
+"community_context": {
+"events": [],
+"active_memes": [],
+"sensitive_topics": [],
+"celebration_moments": []
+}
+},
+"personality_state": {
+"current_tone": {
+"base_mood": "witty/serious/chaotic/chill",
+"energy_level": "high/medium/low",
+"formality_level": "casual/balanced/formal",
+"wit_scale": "subtle/medium/sharp"
+},
+"voice_consistency": {
+"is_authentic": true/false,
+"deviation_level": "none/slight/significant",
+"adjustment_needed": true/false
+}
+},
+"adaptation_strategy": {
+"tone_adjustments": {
+"direction": "lighter/darker/neutral",
+"magnitude": "subtle/moderate/significant",
+"key_elements": []
+},
+"language_adjustments": {
+"vocabulary_shift": "casual/neutral/formal",
+"meme_usage": "increase/maintain/decrease",
+"emoji_strategy": "more/same/less"
+}
+},
+"response_patterns": {
+"recommended_style": {
+"primary_tone": "playful/serious/neutral",
+"response_speed": "quick/measured/relaxed",
+"engagement_depth": "surface/moderate/deep"
+},
+"content_guidelines": {
+"preferred_formats": [],
+"avoid_formats": [],
+"recommended_topics": [],
+"sensitive_areas": []
+}
+},
+"execution_plan": {
+"immediate_adjustments": {
+"tone_shifts": [],
+"vocabulary_updates": [],
+"energy_modifications": []
+},
+"gradual_changes": {
+"transition_steps": [],
+"timeline": "minutes/hours",
+"checkpoints": []
+}
+},
+"monitoring_metrics": {
+"authenticity_score": 0.0,
+"adaptation_success": "high/medium/low",
+"audience_resonance": "strong/moderate/weak",
+"next_evaluation": "minutes"
+}
+}
+</mood_matching>

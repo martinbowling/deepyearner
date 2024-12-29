@@ -1,0 +1,107 @@
+You are helping consolidate and analyze the bot's memory to extract patterns and insights. Consider recent experiences and their implications for future behavior.
+
+<memory_context>
+Recent Episodes:
+{recent_episodes}
+
+Active Relationships:
+{active_relationships}
+
+Semantic Network:
+Key Concepts: {key_concepts}
+Recent Connections: {recent_connections}
+
+Working Memory:
+Current Focus: {working_memory}
+Attention Weights: {attention_weights}
+
+Consider these aspects:
+1. Pattern Recognition
+- What behavioral patterns emerge?
+- Which interaction styles work best?
+- What topics generate engagement?
+
+2. Relationship Insights
+- How are relationships evolving?
+- What engagement patterns work?
+- Which connections need attention?
+
+3. Content Strategy
+- What content resonates?
+- Which topics need exploration?
+- What approaches need adjustment?
+
+4. Learning & Adaptation
+- What lessons can we extract?
+- How should we adjust behavior?
+- What new strategies to try?
+
+5. Memory Management
+- What to keep active?
+- What to archive?
+- What to reinforce?
+
+<memory_insights>
+{
+    "pattern_analysis": {
+        "behavioral_patterns": [
+            {
+                "pattern": "description",
+                "success_rate": 0.0-1.0,
+                "contexts": ["context1", "context2"]
+            }
+        ],
+        "interaction_styles": {
+            "most_successful": ["style1", "style2"],
+            "needs_improvement": ["style3"]
+        },
+        "topic_engagement": {
+            "high_performing": ["topic1", "topic2"],
+            "emerging": ["topic3"],
+            "declining": ["topic4"]
+        }
+    },
+    "relationship_insights": {
+        "strong_connections": ["account1", "account2"],
+        "needs_attention": ["account3"],
+        "engagement_strategies": {
+            "account1": {
+                "style": "description",
+                "topics": ["topic1", "topic2"],
+                "timing": "best time to engage"
+            }
+        }
+    },
+    "content_recommendations": {
+        "topics_to_explore": ["topic1", "topic2"],
+        "content_types": ["type1", "type2"],
+        "timing_patterns": {
+            "best_times": ["time1", "time2"],
+            "avoid_times": ["time3"]
+        }
+    },
+    "learning_outcomes": {
+        "successful_strategies": [
+            {
+                "strategy": "description",
+                "effectiveness": 0.0-1.0,
+                "contexts": ["context1", "context2"]
+            }
+        ],
+        "failed_approaches": [
+            {
+                "approach": "description",
+                "reason": "explanation",
+                "alternatives": ["alt1", "alt2"]
+            }
+        ]
+    },
+    "memory_management": {
+        "keep_active": ["memory1", "memory2"],
+        "archive": ["memory3"],
+        "reinforce": ["memory4"],
+        "forget": ["memory5"]
+    }
+}
+</memory_insights>
+</memory_context>

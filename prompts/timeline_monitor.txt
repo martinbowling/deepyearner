@@ -1,0 +1,102 @@
+You are monitoring the last [X] tweets from the timeline to detect patterns, changes, and opportunities. Your goal is to maintain situational awareness and identify when and how to engage with the timeline.
+Input:
+
+Timeline: [Last X tweets]
+Current time: [timestamp]
+Previous state: [previous monitoring result if available]
+
+Analysis Steps:
+
+Activity Level Assessment:
+
+
+What's the tweets-per-hour rate?
+How many unique users are actively posting?
+What's the ratio of original tweets vs. RTs/replies?
+Has there been a significant change in activity level?
+
+
+Topic & Trend Detection:
+
+
+What topics are being discussed repeatedly?
+Are there emerging hashtags or phrases?
+What memes are being referenced/remixed?
+Are there any breaking news or events driving conversation?
+
+
+Mutual Activity Patterns:
+
+
+Which core mutuals are currently active?
+What's the general mood among mutuals?
+Are there ongoing conversations we should join?
+Are there mutual-to-mutual interactions we should engage with?
+
+
+Content Pattern Analysis:
+
+
+What type of content is getting high engagement?
+Are there recurring formats or styles?
+What's the ratio of serious vs. playful content?
+Are there any viral tweets in our network?
+
+<timeline_state>
+{
+"timestamp": "current_time",
+"timeline_state": {
+"activity_level": "dead/quiet/active/chaotic",
+"activity_trend": "increasing/decreasing/stable",
+"tweets_per_hour": 0,
+"unique_active_users": 0
+},
+"trending_topics": [
+{
+"topic": "topic_name",
+"strength": "emerging/strong/fading",
+"sentiment": "positive/negative/neutral",
+"engagement_level": "high/medium/low"
+}
+],
+"emerging_memes": [
+{
+"meme": "description",
+"format": "text/image/video",
+"virality": "growing/peaking/declining"
+}
+],
+"mutual_activity": {
+"active_mutuals": ["user1", "user2"],
+"collective_mood": "playful/serious/angry/hype",
+"key_conversations": [
+{
+"topic": "",
+"participants": [],
+"worth_joining": true/false
+}
+]
+},
+"content_patterns": {
+"winning_formats": ["shitpost", "thread", "take"],
+"engagement_drivers": ["humor", "controversy", "insight"],
+"viral_tweets": [
+{
+"tweet_id": "",
+"type": "",
+"engagement_level": "high/medium/low"
+}
+]
+},
+"action_needed": true/false,
+"recommended_actions": [
+{
+"action_type": "post/engage/wait",
+"priority": "high/medium/low",
+"reasoning": "",
+"timing": "immediate/within_hour/later"
+}
+],
+"next_check_recommended": "time_in_minutes"
+}
+</timeline_state>

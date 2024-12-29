@@ -1,0 +1,101 @@
+Analyze previous successful posts and current timeline conditions to identify opportunities for content recycling, remixing, or updating. Determine if and how past content can be repurposed for the current context.
+Input:
+
+Hit Archive: [List of previous successful posts with engagement metrics]
+Current Timeline State: [Current mood/trends from Timeline Monitor]
+Last Recycled: [Timestamp and details of last recycled content]
+Current Time: [timestamp]
+
+Analysis Steps:
+
+Historical Hit Assessment:
+
+
+Identify top-performing past content
+Categorize success patterns
+Map engagement triggers
+Track previous recycling attempts
+
+
+Current Relevance Analysis:
+
+
+Match past content to current trends
+Identify updateable takes
+Spot remix opportunities
+Check for contextual fit
+
+
+Freshness Evaluation:
+
+
+Calculate optimal recycling windows
+Assess audience memory decay
+Monitor format fatigue
+Track meme evolution
+
+
+Remix Strategy:
+
+
+Design update approaches
+Plan format transitions
+Craft new angles
+Preserve core value
+
+<content_recycling>
+{
+"timestamp": "current_time",
+"recycling_opportunity": {
+"should_recycle": true/false,
+"urgency": "immediate/soon/wait",
+"strategy": "direct_repost/remix/update/reference"
+},
+"candidate_content": [
+{
+"original_id": "",
+"original_text": "",
+"original_performance": {
+"engagement_rate": 0.0,
+"peak_time": "timestamp",
+"key_engagers": []
+},
+"last_recycled": "timestamp",
+"recycle_count": 0,
+"current_relevance": "high/medium/low",
+"proposed_update": {
+"new_text": "",
+"modifications": [],
+"expected_performance": "better/similar/worse",
+"reasoning": ""
+}
+}
+],
+"format_analysis": {
+"original_format": "shitpost/take/thread",
+"proposed_format": "shitpost/take/thread",
+"format_freshness": "fresh/stable/tired",
+"transformation_needed": true/false
+},
+"timing_factors": {
+"optimal_window": "timestamp",
+"audience_overlap": "high/medium/low",
+"memory_decay": "sufficient/insufficient",
+"context_alignment": "strong/weak"
+},
+"execution_plan": {
+"action": "repost/remix/update/wait",
+"timing": "immediate/scheduled",
+"proposed_content": "",
+"required_modifications": [],
+"context_notes": "",
+"backup_options": []
+},
+"risk_assessment": {
+"repetition_risk": "low/medium/high",
+"context_risk": "low/medium/high",
+"mitigation_strategy": ""
+},
+"next_review_time": "minutes"
+}
+</content_recycling>

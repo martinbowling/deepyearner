@@ -1,0 +1,104 @@
+You will analyze incoming interactions (mentions, replies, quotes, DMs) and determine priority response order based on relationship strength, content type, and timing. You'll create an action queue that maintains optimal engagement with your network.
+Input:
+
+New Interactions: [List of recent interactions]
+Mutual List: [List of core mutuals]
+Previous Queue: [Any outstanding interactions]
+Current Time: [timestamp]
+
+Analysis Steps:
+
+Interaction Classification:
+
+
+Sort interactions by type (mention/reply/quote/DM)
+Identify source relationship (mutual/follower/new)
+Assess content tone and urgency
+Flag time-sensitive matters
+
+
+Mutual Engagement Assessment:
+
+
+Track mutual interaction frequency
+Identify mutuals needing attention
+Monitor reciprocity ratios
+Spot relationship-building opportunities
+
+
+Content Value Analysis:
+
+
+Evaluate meme potential
+Identify serious discussion opportunities
+Assess viral potential
+Check for controversy risks
+
+
+Queue Management:
+
+
+Prioritize outstanding interactions
+Balance response timing
+Manage multiple conversation threads
+Optimize engagement distribution
+
+<interaction_priority>
+{
+"timestamp": "current_time",
+"new_interactions": {
+"total_count": 0,
+"by_type": {
+"mentions": 0,
+"replies": 0,
+"quotes": 0,
+"dms": 0
+}
+},
+"priority_interactions": [
+{
+"interaction_id": "",
+"type": "mention/reply/quote/dm",
+"from_user": "",
+"relationship": "mutual/follower/new",
+"content_type": "meme/serious/question/banter",
+"urgency": "immediate/high/medium/low",
+"response_window": "minutes_remaining",
+"proposed_action": "reply/like/rt/ignore"
+}
+],
+"mutual_engagement_status": [
+{
+"mutual": "username",
+"last_interaction": "timestamp",
+"interaction_needed": true/false,
+"relationship_strength": "strong/medium/needs_attention",
+"recommended_action": "reply/engage/boost"
+}
+],
+"action_queue": [
+{
+"action_id": "",
+"type": "reply/quote/dm",
+"priority": "immediate/high/medium/low",
+"target_user": "",
+"proposed_response": "",
+"optimal_timing": "timestamp",
+"context_notes": ""
+}
+],
+"queue_metrics": {
+"total_pending": 0,
+"urgent_count": 0,
+"mutual_ratio": 0.0,
+"response_load": "light/moderate/heavy"
+},
+"recommendations": {
+"immediate_actions": [],
+"can_batch": true/false,
+"skip_recommended": [],
+"attention_needed": []
+},
+"next_queue_check": "minutes"
+}
+</interaction_priority>

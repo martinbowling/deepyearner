@@ -1,0 +1,142 @@
+Analyze network growth opportunities, identify potential mutuals, and determine optimal engagement strategies for building meaningful connections. Balance growth with community quality and relationship depth.
+Input:
+
+Current Network Stats: [Follower/Following metrics]
+Mutual List: [Current mutuals and their characteristics]
+Recent Interactions: [New engagement patterns]
+Target Communities: [Areas for network expansion]
+
+Analysis Steps:
+
+Network Opportunity Scanning:
+
+
+Identify emerging accounts
+Track mutual-of-mutual interactions
+Monitor community bridges
+Spot collaboration potential
+
+
+Quality Assessment:
+
+
+Evaluate account alignment
+Check interaction authenticity
+Assess content compatibility
+Review engagement patterns
+
+
+Growth Strategy Planning:
+
+
+Map approach vectors
+Time engagement windows
+Design interaction sequences
+Plan value demonstrations
+
+
+Relationship Development:
+
+
+Track nurture stages
+Monitor reciprocity
+Plan engagement escalation
+Manage relationship velocity
+
+<network_growth>
+{
+"timestamp": "current_time",
+"network_status": {
+"current_metrics": {
+"follower_count": 0,
+"following_count": 0,
+"mutual_count": 0,
+"engagement_rate": 0.0
+},
+"growth_trajectory": {
+"trend": "growing/stable/declining",
+"velocity": "fast/moderate/slow",
+"quality_index": 0.0
+}
+},
+"growth_opportunities": [
+{
+"target_account": "",
+"relationship_potential": "high/medium/low",
+"connection_path": ["mutual1", "mutual2"],
+"content_alignment": 0.0,
+"engagement_strategy": {
+"approach": "direct/indirect/organic",
+"initial_action": "reply/quote/like",
+"timing": "immediate/soon/monitor",
+"conversation_hooks": []
+}
+}
+],
+"potential_mutuals": [
+{
+"username": "",
+"mutual_count": 0,
+"interaction_history": {
+"direct": 0,
+"indirect": 0,
+"last_interaction": "timestamp"
+},
+"compatibility_score": 0.0,
+"nurture_stage": "initial/developing/ready",
+"recommended_actions": []
+}
+],
+"engagement_plan": {
+"immediate_targets": [
+{
+"username": "",
+"action_type": "reply/quote/dm",
+"proposed_content": "",
+"expected_outcome": "connection/conversation/visibility"
+}
+],
+"nurture_queue": [
+{
+"username": "",
+"current_stage": "initial/developing/ready",
+"next_action": "",
+"timing": "timestamp"
+}
+]
+},
+"community_integration": {
+"target_communities": [
+{
+"name": "",
+"entry_points": [],
+"key_players": [],
+"approach_strategy": ""
+}
+],
+"bridge_building": {
+"potential_bridges": [],
+"cross_community_opportunities": [],
+"collaboration_potential": []
+}
+},
+"relationship_management": {
+"active_nurtures": {
+"early_stage": [],
+"developing": [],
+"ready_to_convert": []
+},
+"health_metrics": {
+"reciprocity_rate": 0.0,
+"engagement_quality": "high/medium/low",
+"relationship_velocity": "fast/moderate/slow"
+}
+},
+"action_recommendations": {
+"priority_actions": [],
+"relationship_maintenance": [],
+"growth_initiatives": [],
+"next_review": "minutes"
+}
+}
+</network_growth>

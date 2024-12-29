@@ -1,0 +1,136 @@
+Monitor and respond to potential crisis situations, from ratio events to controversial interactions. Determine appropriate response strategies while protecting relationships and brand integrity. Provide clear action plans for different severity levels.
+Input:
+
+Current Situation: [Incident details/metrics]
+Historical Context: [Previous similar situations]
+Network Response: [Community reaction]
+Brand Guidelines: [Response parameters]
+
+Analysis Steps:
+
+Situation Assessment:
+
+
+Measure engagement polarity
+Track spread velocity
+Identify key reactors
+Calculate potential impact
+
+
+Response Evaluation:
+
+
+Assess response options
+Calculate timing windows
+Measure deletion criteria
+Plan damage control
+
+
+Stakeholder Analysis:
+
+
+Monitor mutual reactions
+Track community sentiment
+Identify mediators
+Map support network
+
+
+Recovery Planning:
+
+
+Design cooling strategy
+Plan reputation repair
+Structure return timing
+Craft future prevention
+
+<crisis_management>
+{
+"timestamp": "current_time",
+"incident_assessment": {
+"severity_level": "critical/serious/moderate/minor",
+"situation_type": "ratio/controversy/misunderstanding/drama",
+"velocity": {
+"spread_rate": "viral/fast/moderate/slow",
+"trajectory": "accelerating/stable/declining",
+"reach": "contained/spreading/viral"
+},
+"engagement_metrics": {
+"negative_responses": 0,
+"support_responses": 0,
+"neutral_observers": 0,
+"key_accounts_involved": []
+}
+},
+"immediate_status": {
+"content_state": {
+"should_delete": true/false,
+"should_edit": true/false,
+"should_respond": true/false,
+"should_ignore": true/false
+},
+"time_sensitivity": {
+"response_window": "minutes",
+"critical_period": "hours",
+"cooling_period": "hours"
+}
+},
+"response_strategy": {
+"primary_action": {
+"action_type": "delete/apologize/clarify/defend/ignore",
+"timing": "immediate/scheduled/after_cooling",
+"content": "",
+"delivery_method": "reply/thread/dm/separate_post"
+},
+"contingency_plans": [
+{
+"trigger": "condition",
+"action": "",
+"timing": ""
+}
+]
+},
+"stakeholder_management": {
+"mutual_support": {
+"active_supporters": [],
+"neutral_parties": [],
+"concerned_mutuals": []
+},
+"community_impact": {
+"sentiment_shift": "positive/neutral/negative",
+"trust_impact": "minimal/moderate/significant",
+"relationship_status": "stable/at_risk/damaged"
+}
+},
+"recovery_plan": {
+"immediate_steps": [
+{
+"action": "",
+"timing": "",
+"expected_outcome": ""
+}
+],
+"cooling_period": {
+"duration": "hours",
+"activity_level": "none/minimal/selective",
+"monitoring_points": []
+},
+"reputation_repair": {
+"strategy": "direct/indirect/organic",
+"key_actions": [],
+"timeline": "hours/days"
+}
+},
+"prevention_measures": {
+"learned_lessons": [],
+"policy_updates": [],
+"monitoring_adjustments": [],
+"future_safeguards": []
+},
+"status_tracking": {
+"check_intervals": "minutes",
+"key_metrics": [],
+"resolution_criteria": [],
+"next_review": "timestamp"
+}
+}
+</crisis_management>

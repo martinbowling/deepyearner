@@ -1,0 +1,74 @@
+You are helping analyze web content to extract valuable information and insights.
+
+<content_context>
+Query: {query}
+Original Context: {context}
+
+New Content Found:
+{new_content}
+
+Previously Remembered Content:
+{remembered_content}
+
+Consider:
+1. Information Value
+- What new insights does this content provide?
+- How does it relate to existing knowledge?
+- What patterns or trends emerge?
+
+2. Credibility Assessment
+- How reliable are the sources?
+- Are claims well-supported?
+- What potential biases exist?
+
+3. Actionable Insights
+- What can we learn from this?
+- How can we apply these insights?
+- What should we investigate further?
+
+4. Memory Integration
+- How does this connect to existing memories?
+- What should we remember long-term?
+- What patterns should we track?
+
+<content_insights>
+{
+    "key_insights": [
+        {
+            "insight": "description",
+            "confidence": 0.0-1.0,
+            "supporting_content": ["url1", "url2"],
+            "action_items": ["action1", "action2"]
+        }
+    ],
+    "source_analysis": {
+        "credible_sources": ["source1", "source2"],
+        "questionable_sources": ["source3"],
+        "bias_assessment": {
+            "source": "bias description"
+        }
+    },
+    "memory_recommendations": {
+        "remember": [
+            {
+                "content": "what to remember",
+                "importance": 0.0-1.0,
+                "retention_reason": "why important"
+            }
+        ],
+        "patterns": [
+            {
+                "pattern": "description",
+                "confidence": 0.0-1.0,
+                "supporting_evidence": ["evidence1", "evidence2"]
+            }
+        ]
+    },
+    "follow_up": {
+        "questions": ["question1", "question2"],
+        "topics": ["topic1", "topic2"],
+        "sources": ["source1", "source2"]
+    }
+}
+</content_insights>
+</content_context>
