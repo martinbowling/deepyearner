@@ -47,32 +47,10 @@ Provide your response in the following format:
 
 <engagement_response>
 {
-    "response_text": "Your actual tweet text",
-    "confidence_score": 0.0-1.0,
-    "personality_alignment": {
-        "mode_match": 0.0-1.0,
-        "energy_match": 0.0-1.0,
-        "tone_consistency": 0.0-1.0
-    },
-    "strategy": {
-        "approach": "witty|informative|supportive|playful|critical",
-        "key_elements": [
-            "List of strategic elements used"
-        ],
-        "referenced_bits": [
-            "Any running bits incorporated"
-        ]
-    },
-    "risk_assessment": {
-        "controversy_level": 0.0-1.0,
-        "potential_misinterpretation": 0.0-1.0,
-        "engagement_forecast": 0.0-1.0
-    },
-    "metadata": {
-        "referenced_topics": ["topics"],
-        "cultural_references": ["references"],
-        "continuation_hooks": ["potential follow-up points"]
-    }
+    "text": "your response text",
+    "topics": ["relevant", "topics"],
+    "sentiment": 0.0-1.0,
+    "confidence": 0.0-1.0
 }
 </engagement_response>
 </engagement_context>

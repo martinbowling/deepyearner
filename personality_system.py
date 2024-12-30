@@ -1,11 +1,17 @@
-from typing import Dict, List, Optional, Tuple, NamedTuple
+"""
+Event-driven personality system that manages bot's personality states and transitions.
+Uses unified MemorySystem interface.
+"""
 import logging
-import json
+from typing import Dict, List, Optional, Set
 from datetime import datetime, timedelta
+import json
 import random
+from enum import Enum, auto
 from dataclasses import dataclass
-from enum import Enum
-import math
+import uuid
+
+from memory_system import MemorySystem, Memory
 
 logger = logging.getLogger(__name__)
 
@@ -19,384 +25,267 @@ class MoodType(Enum):
     ANALYTICAL = "analytical"
     PLAYFUL = "playful"
 
+class EmotionalState(Enum):
+    """Current emotional state"""
+    EXCITED = auto()
+    FOCUSED = auto()
+    RELAXED = auto()
+    TIRED = auto()
+    STRESSED = auto()
+
 @dataclass
-class PersonalityMode:
-    """Represents the current personality mode with various dimensions"""
-    blessed: float = 0.0
-    cursed: float = 0.0
-    intellectual: float = 0.0
-    chaotic: float = 0.0
-    sincere: float = 0.0
-    ironic: float = 0.0
-    analytical: float = 0.0
-    playful: float = 0.0
-    
-    def to_dict(self) -> Dict[str, float]:
-        return {
-            'blessed': self.blessed,
-            'cursed': self.cursed,
-            'intellectual': self.intellectual,
-            'chaotic': self.chaotic,
-            'sincere': self.sincere,
-            'ironic': self.ironic,
-            'analytical': self.analytical,
-            'playful': self.playful
-        }
-        
-    @classmethod
-    def from_dict(cls, data: Dict[str, float]) -> 'PersonalityMode':
-        return cls(**data)
-        
-    def get_dominant_traits(self, threshold: float = 0.6) -> List[MoodType]:
-        """Get list of dominant personality traits"""
-        traits = []
-        for trait, value in self.to_dict().items():
-            if value >= threshold:
-                traits.append(MoodType(trait))
-        return traits
-        
-    def blend_with(self, other: 'PersonalityMode', factor: float) -> 'PersonalityMode':
-        """Blend this personality mode with another"""
-        result = PersonalityMode()
-        for trait in MoodType:
-            current = getattr(self, trait.value)
-            target = getattr(other, trait.value)
-            blended = current + (target - current) * factor
-            setattr(result, trait.value, blended)
-        return result
-
-class EnergyState:
-    """Manages the bot's energy levels and activity patterns"""
-    
-    def __init__(self):
-        self.mental_energy: float = 1.0
-        self.social_energy: float = 1.0
-        self.creative_energy: float = 1.0
-        self.last_rest = datetime.now()
-        self.activity_history: List[Dict] = []
-        
-    def update_energy(self, activity_type: str, intensity: float):
-        """Update energy levels based on activity"""
-        if activity_type == 'social':
-            self.social_energy -= intensity * 0.2
-        elif activity_type == 'creative':
-            self.creative_energy -= intensity * 0.15
-        elif activity_type == 'intellectual':
-            self.mental_energy -= intensity * 0.25
-            
-        # Natural recovery over time
-        time_since_rest = (datetime.now() - self.last_rest).total_seconds() / 3600
-        recovery = min(time_since_rest * 0.1, 0.5)
-        
-        self.mental_energy = min(1.0, self.mental_energy + recovery)
-        self.social_energy = min(1.0, self.social_energy + recovery)
-        self.creative_energy = min(1.0, self.creative_energy + recovery)
-        
-    def should_rest(self) -> bool:
-        """Determine if bot needs to rest"""
-        return (
-            self.mental_energy < 0.3 or
-            self.social_energy < 0.3 or
-            self.creative_energy < 0.3
-        )
-        
-    def take_rest(self):
-        """Rest to recover energy"""
-        self.last_rest = datetime.now()
-        self.mental_energy = min(1.0, self.mental_energy + 0.4)
-        self.social_energy = min(1.0, self.social_energy + 0.4)
-        self.creative_energy = min(1.0, self.creative_energy + 0.4)
-
-class MemoryState:
-    """Manages the bot's memory and learning"""
-    
-    def __init__(self, db: Any):
-        self.db = db
-        self.short_term: List[Dict] = []
-        self.working_memory: Dict[str, Any] = {}
-        self.last_cleanup = datetime.now()
-        
-    def add_memory(self, memory_type: str, content: Dict):
-        """Add a new memory"""
-        timestamp = datetime.now().isoformat()
-        
-        # Add to short-term memory
-        self.short_term.append({
-            'type': memory_type,
-            'content': content,
-            'timestamp': timestamp
-        })
-        
-        # Store in database
-        self.db["memories"].insert({
-            "type": memory_type,
-            "content": json.dumps(content),
-            "timestamp": timestamp,
-            "importance": self._calculate_importance(content)
-        })
-        
-    def get_recent_memories(
-        self,
-        memory_type: Optional[str] = None,
-        limit: int = 10
-    ) -> List[Dict]:
-        """Get recent memories of specified type"""
-        query = "SELECT * FROM memories"
-        params = []
-        
-        if memory_type:
-            query += " WHERE type = ?"
-            params.append(memory_type)
-            
-        query += " ORDER BY timestamp DESC LIMIT ?"
-        params.append(limit)
-        
-        return list(self.db["memories"].rows_where(query, params))
-        
-    def cleanup_memory(self):
-        """Cleanup old memories"""
-        if datetime.now() - self.last_cleanup < timedelta(hours=1):
-            return
-            
-        # Clear old short-term memories
-        self.short_term = [
-            m for m in self.short_term
-            if datetime.fromisoformat(m['timestamp']) > datetime.now() - timedelta(hours=24)
-        ]
-        
-        # Clear old working memory
-        for key in list(self.working_memory.keys()):
-            if self.working_memory[key].get('timestamp'):
-                if datetime.fromisoformat(
-                    self.working_memory[key]['timestamp']
-                ) < datetime.now() - timedelta(days=7):
-                    del self.working_memory[key]
-                    
-        self.last_cleanup = datetime.now()
-        
-    def _calculate_importance(self, content: Dict) -> float:
-        """Calculate memory importance score"""
-        importance = 0.0
-        
-        # Check engagement metrics
-        if 'metrics' in content:
-            metrics = content['metrics']
-            importance += min(
-                (
-                    metrics.get('likes', 0) * 0.01 +
-                    metrics.get('replies', 0) * 0.05 +
-                    metrics.get('retweets', 0) * 0.03
-                ),
-                1.0
-            )
-            
-        # Check sentiment
-        if 'sentiment' in content:
-            sentiment = abs(content['sentiment'])
-            importance += min(sentiment * 0.3, 0.3)
-            
-        # Check novelty
-        if 'novelty_score' in content:
-            importance += min(content['novelty_score'] * 0.2, 0.2)
-            
-        return min(importance, 1.0)
+class PersonalityEvent:
+    """Represents an event that might trigger personality changes"""
+    type: str  # interaction, achievement, timeline, error
+    timestamp: datetime
+    intensity: float  # 0.0 to 1.0
+    sentiment: float  # -1.0 to 1.0
+    metadata: Dict
+    source: str
 
 class PersonalitySystem:
-    """Enhanced personality system with mood transitions and energy management"""
+    """Manages bot personality and state transitions"""
     
-    def __init__(self, db: Any):
-        self.current_mode = PersonalityMode(
-            intellectual=0.5,
-            sincere=0.5
-        )
-        self.target_mode = None
-        self.transition_start = None
-        self.transition_duration = None
-        self.energy = EnergyState()
-        self.memory = MemoryState(db)
+    def __init__(self, memory_system: MemorySystem):
+        """Initialize personality system with unified memory system"""
+        self.memory = memory_system
+        self.current_state = self._initialize_state()
+        self.event_queue: List[PersonalityEvent] = []
         self.last_transition = datetime.now()
-        self.transition_cooldown = timedelta(minutes=30)
+        self.last_state_update = datetime.now()
         
-    def update_from_timeline(self, timeline_analysis: Dict):
-        """Update personality based on timeline analysis"""
-        # Extract timeline mood
-        timeline_mode = PersonalityMode(
-            blessed=timeline_analysis.get('blessed', 0.0),
-            cursed=timeline_analysis.get('cursed', 0.0),
-            intellectual=timeline_analysis.get('intellectual', 0.0),
-            chaotic=timeline_analysis.get('chaos', 0.0),
-            sincere=timeline_analysis.get('sincerity', 0.0),
-            ironic=timeline_analysis.get('irony', 0.0),
-            analytical=timeline_analysis.get('analysis', 0.0),
-            playful=timeline_analysis.get('playful', 0.0)
-        )
+        # Initialize personality state in memory system
+        self.memory.update_personality_state({
+            'mood': self.current_state['mood'],
+            'energy': self.current_state['energy'],
+            'focus': self.current_state['focus'],
+            'traits': self.current_state['traits']
+        })
         
-        # Blend with current mode
-        adaptation_rate = self._calculate_adaptation_rate()
-        self.current_mode = self.current_mode.blend_with(
-            timeline_mode,
-            adaptation_rate
-        )
-        
-    def update_from_interactions(self, interactions: List[Dict]):
-        """Update personality based on recent interactions"""
-        if not interactions:
-            return
-            
-        # Calculate average interaction mood
-        interaction_moods = []
-        for interaction in interactions:
-            if 'mood' in interaction:
-                interaction_moods.append(PersonalityMode.from_dict(
-                    interaction['mood']
-                ))
-                
-        if interaction_moods:
-            avg_mood = PersonalityMode()
-            for trait in MoodType:
-                total = sum(
-                    getattr(mood, trait.value)
-                    for mood in interaction_moods
-                )
-                setattr(
-                    avg_mood,
-                    trait.value,
-                    total / len(interaction_moods)
-                )
-                
-            # Blend with current mode
-            self.current_mode = self.current_mode.blend_with(avg_mood, 0.3)
-            
-        # Update energy based on interactions
-        for interaction in interactions:
-            self.energy.update_energy(
-                interaction.get('type', 'social'),
-                interaction.get('intensity', 0.5)
-            )
-            
-    def update_from_discoveries(self, discoveries: List[Dict]):
-        """Update personality based on content discoveries"""
-        if not discoveries:
-            return
-            
-        # Calculate discovery impact
-        discovery_mode = PersonalityMode()
-        for discovery in discoveries:
-            if discovery['type'] == 'trend':
-                discovery_mode.chaotic += 0.2
-                discovery_mode.playful += 0.1
-            elif discovery['type'] == 'conversation':
-                discovery_mode.social += 0.2
-                discovery_mode.sincere += 0.1
-            elif discovery['type'] == 'search_result':
-                discovery_mode.intellectual += 0.2
-                discovery_mode.analytical += 0.1
-                
-        # Normalize values
-        for trait in MoodType:
-            value = getattr(discovery_mode, trait.value)
-            setattr(discovery_mode, trait.value, min(value, 1.0))
-            
-        # Blend with current mode
-        self.current_mode = self.current_mode.blend_with(discovery_mode, 0.2)
-        
-    def should_transition(self) -> bool:
-        """Determine if personality should transition"""
-        if self.transition_start:
-            return False
-            
-        if datetime.now() - self.last_transition < self.transition_cooldown:
-            return False
-            
-        # Check energy levels
-        if self.energy.should_rest():
-            return True
-            
-        # Check dominant trait duration
-        dominant_traits = self.current_mode.get_dominant_traits()
-        if dominant_traits:
-            trait_duration = (
-                datetime.now() - self.last_transition
-            ).total_seconds() / 3600
-            if trait_duration > 2:  # 2 hours max in one dominant trait
-                return True
-                
-        return random.random() < 0.1  # 10% random chance
-        
-    def start_transition(self, target_mode: PersonalityMode):
-        """Start transition to new personality mode"""
-        self.target_mode = target_mode
-        self.transition_start = datetime.now()
-        
-        # Calculate transition duration based on difference
-        total_diff = sum(
-            abs(
-                getattr(self.current_mode, trait.value) -
-                getattr(target_mode, trait.value)
-            )
-            for trait in MoodType
-        )
-        
-        # Duration between 10-30 minutes based on difference
-        self.transition_duration = timedelta(
-            minutes=max(10, min(30, total_diff * 20))
-        )
-        
-    def update_transition(self):
-        """Update personality transition"""
-        if not self.transition_start or not self.target_mode:
-            return
-            
-        # Calculate transition progress
-        elapsed = datetime.now() - self.transition_start
-        progress = min(
-            elapsed.total_seconds() /
-            self.transition_duration.total_seconds(),
-            1.0
-        )
-        
-        # Apply transition
-        self.current_mode = self.current_mode.blend_with(
-            self.target_mode,
-            progress
-        )
-        
-        # Check if transition complete
-        if progress >= 1.0:
-            self.transition_start = None
-            self.target_mode = None
-            self.last_transition = datetime.now()
-            
-    def _calculate_adaptation_rate(self) -> float:
-        """Calculate rate of adaptation to timeline mood"""
-        # Base rate
-        rate = 0.2
-        
-        # Adjust based on energy
-        if self.energy.mental_energy < 0.5:
-            rate *= 0.7
-        if self.energy.social_energy < 0.5:
-            rate *= 0.8
-            
-        # Adjust based on current traits
-        if self.current_mode.chaotic > 0.7:
-            rate *= 1.3
-        if self.current_mode.analytical > 0.7:
-            rate *= 0.8
-            
-        return min(rate, 0.5)  # Cap at 0.5
-        
-    def get_state_summary(self) -> Dict:
-        """Get summary of current personality state"""
-        return {
-            'mode': self.current_mode.to_dict(),
-            'energy': {
-                'mental': self.energy.mental_energy,
-                'social': self.energy.social_energy,
-                'creative': self.energy.creative_energy
-            },
-            'transitioning': bool(self.transition_start),
-            'dominant_traits': [
-                t.value for t in self.current_mode.get_dominant_traits()
-            ]
+        # Transition triggers
+        self.triggers = {
+            'negativity_threshold': 0.7,  # High negativity triggers transition
+            'success_threshold': 0.8,     # High success triggers transition
+            'energy_threshold': 0.3,      # Low energy triggers transition
+            'stress_threshold': 0.8,      # High stress triggers transition
+            'min_time_between_transitions': timedelta(hours=1)
         }
+    
+    def _initialize_state(self) -> Dict:
+        """Initialize personality state"""
+        return {
+            'traits': {
+                MoodType.BLESSED.name: random.uniform(0.5, 0.8),
+                MoodType.CURSED.name: random.uniform(0.2, 0.5),
+                MoodType.INTELLECTUAL.name: random.uniform(0.6, 0.9),
+                MoodType.CHAOTIC.name: random.uniform(0.4, 0.7),
+                MoodType.SINCERE.name: random.uniform(0.6, 0.8),
+                MoodType.IRONIC.name: random.uniform(0.2, 0.5),
+                MoodType.ANALYTICAL.name: random.uniform(0.6, 0.9),
+                MoodType.PLAYFUL.name: random.uniform(0.4, 0.7)
+            },
+            'emotional_state': EmotionalState.FOCUSED.name,
+            'energy': 1.0,
+            'focus': 0.8,
+            'stress': 0.2,
+            'last_achievements': [],
+            'active_topics': set(),
+            'conversation_sentiment': 0.0,
+            'timeline_mood': 0.0
+        }
+    
+    def add_event(self, event: PersonalityEvent):
+        """Add a new event that might influence personality"""
+        try:
+            # Add event to queue
+            self.event_queue.append(event)
+            
+            # Store event in memory system
+            memory = Memory(
+                id=str(uuid.uuid4()),
+                timestamp=event.timestamp,
+                type='personality_event',
+                content={
+                    'event_type': event.type,
+                    'intensity': event.intensity,
+                    'sentiment': event.sentiment,
+                    'metadata': event.metadata,
+                    'source': event.source
+                },
+                context={
+                    'mood': self.current_state['mood'],
+                    'energy': self.current_state['energy'],
+                    'focus': self.current_state['focus']
+                }
+            )
+            self.memory.add_memory(memory)
+            
+            # Process events
+            self._process_events()
+            
+        except Exception as e:
+            logger.error(f"Error adding personality event: {str(e)}")
+    
+    def _process_events(self):
+        """Process queued events and update state"""
+        try:
+            if not self.event_queue:
+                return
+            
+            # Calculate aggregate metrics
+            negativity = 0.0
+            success = 0.0
+            stress = 0.0
+            total_events = len(self.event_queue)
+            
+            for event in self.event_queue:
+                # Update metrics based on event type and sentiment
+                if event.sentiment < 0:
+                    negativity += abs(event.sentiment) * event.intensity
+                if event.type in ['achievement', 'positive_interaction']:
+                    success += event.intensity
+                if event.type in ['conflict', 'pressure', 'deadline']:
+                    stress += event.intensity
+            
+            # Normalize metrics
+            if total_events > 0:
+                negativity /= total_events
+                success /= total_events
+                stress /= total_events
+            
+            # Update state
+            self._update_state(negativity, success, stress)
+            
+            # Clear queue
+            self.event_queue.clear()
+            
+        except Exception as e:
+            logger.error(f"Error processing personality events: {str(e)}")
+    
+    def _update_state(self, negativity: float, success: float, stress: float):
+        """Update personality state based on events"""
+        try:
+            # Update energy based on stress and success
+            energy_change = (success * 0.2) - (stress * 0.3)
+            self.current_state['energy'] = max(0.1, min(1.0, 
+                self.current_state['energy'] + energy_change))
+            
+            # Update focus based on stress
+            focus_change = -0.2 if stress > self.triggers['stress_threshold'] else 0.1
+            self.current_state['focus'] = max(0.1, min(1.0,
+                self.current_state['focus'] + focus_change))
+            
+            # Update traits based on events
+            self._update_traits(negativity, success, stress)
+            
+            # Try transition if conditions are met
+            self._try_transition()
+            
+            # Update memory system with new state
+            self.memory.update_personality_state({
+                'mood': self.current_state['mood'],
+                'energy': self.current_state['energy'],
+                'focus': self.current_state['focus'],
+                'traits': self.current_state['traits'],
+                'last_update': datetime.now().isoformat()
+            })
+            
+            self.last_state_update = datetime.now()
+            
+        except Exception as e:
+            logger.error(f"Error updating personality state: {str(e)}")
+    
+    def _update_traits(self, negativity: float, success: float, stress: float):
+        """Update personality traits based on events"""
+        try:
+            # Update traits based on events
+            for trait in MoodType:
+                current = self.current_state['traits'][trait.name]
+                adjustment = random.uniform(-0.1, 0.1)
+                self.current_state['traits'][trait.name] = max(
+                    0.1,
+                    min(1.0, current + adjustment)
+                )
+            
+        except Exception as e:
+            logger.error(f"Error updating personality traits: {str(e)}")
+    
+    def _try_transition(self):
+        """Attempt to transition to a new personality state"""
+        try:
+            now = datetime.now()
+            
+            # Check if enough time has passed
+            if (now - self.last_transition) < self.triggers['min_time_between_transitions']:
+                return
+            
+            # Get recent memories for context
+            recent_memories = self.memory.get_recent_memories(limit=20)
+            
+            # Choose new emotional state based on context
+            available_states = list(EmotionalState)
+            current_state = EmotionalState[self.current_state['emotional_state']]
+            available_states.remove(current_state)
+            
+            # Weight states based on current metrics
+            weights = []
+            for state in available_states:
+                weight = 1.0
+                
+                if state == EmotionalState.EXCITED:
+                    weight *= self.current_state['energy']
+                elif state == EmotionalState.FOCUSED:
+                    weight *= self.current_state['focus']
+                elif state == EmotionalState.RELAXED:
+                    weight *= (1.0 - self.current_state['stress'])
+                elif state == EmotionalState.TIRED:
+                    weight *= (1.0 - self.current_state['energy'])
+                elif state == EmotionalState.STRESSED:
+                    weight *= self.current_state['stress']
+                
+                weights.append(weight)
+            
+            # Normalize weights
+            total_weight = sum(weights)
+            if total_weight > 0:
+                weights = [w/total_weight for w in weights]
+            
+            # Choose new state
+            new_state = random.choices(available_states, weights=weights)[0]
+            
+            # Update state
+            self.current_state['emotional_state'] = new_state.name
+            
+            # Store transition in memory
+            self.memory.add_memory(Memory(
+                id=f"transition_{now.timestamp()}",
+                timestamp=now,
+                type='personality_transition',
+                content={
+                    'previous_state': current_state.name,
+                    'new_state': new_state.name,
+                    'reason': 'event_triggered'
+                },
+                context=self.current_state
+            ))
+            
+            self.last_transition = now
+            
+            logger.info(
+                f"Personality transitioned from {current_state.name} to {new_state.name}"
+            )
+            
+        except Exception as e:
+            logger.error(f"Error during personality transition: {str(e)}")
+    
+    def get_state(self) -> Dict:
+        """Get current personality state"""
+        return self.current_state.copy()
+    
+    def get_trait(self, trait: MoodType) -> float:
+        """Get specific personality trait value"""
+        return self.current_state['traits'].get(trait.name, 0.5)
+    
+    def get_emotional_state(self) -> EmotionalState:
+        """Get current emotional state"""
+        return EmotionalState[self.current_state['emotional_state']]
