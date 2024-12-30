@@ -13,6 +13,7 @@ from nltk.stem import WordNetLemmatizer
 import nltk
 import asyncio
 from tenacity import retry, stop_after_attempt, wait_exponential
+from config import ModelType, get_model_name
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,10 @@ class ContentProcessor:
     """Processes content to extract topics, summaries, and insights"""
     
     def __init__(self, anthropic_client: Any):
+        """Initialize content processor with model configurations"""
         self.client = anthropic_client
+        self.analysis_model = get_model_name(ModelType.CONTENT_ANALYSIS)
+        self.generation_model = get_model_name(ModelType.CONTENT_GENERATION)
         self.lemmatizer = WordNetLemmatizer()
         self.stop_words = set(stopwords.words('english'))
         self.vectorizer = TfidfVectorizer(
@@ -245,7 +249,7 @@ Return your analysis in this JSON format:
 }}"""
             
             response = await self.client.messages.create(
-                model="claude-3-opus-20240229",
+                model=self.analysis_model,
                 max_tokens=1000,
                 temperature=0,
                 messages=[{
@@ -298,7 +302,7 @@ Return in JSON format:
 }}"""
             
             response = await self.client.messages.create(
-                model="claude-3-opus-20240229",
+                model=self.generation_model,
                 max_tokens=1000,
                 temperature=0,
                 messages=[{

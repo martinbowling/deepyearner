@@ -15,6 +15,7 @@ from tenacity import (
 from search_system import SearchSystem, SearchResult
 from memory_system import MemorySystem, Episode
 from content_processor import ContentProcessor, ProcessedContent
+from config import ModelType, get_model_name
 
 logger = logging.getLogger(__name__)
 

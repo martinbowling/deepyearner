@@ -79,6 +79,15 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
+from config import ModelType, get_model_name, ModelConfig
+
+class Bot:
+    def __init__(self, config: Dict[str, Any]):
+        """Initialize bot with model configurations"""
+        self.config = config
+        self.chat_model = get_model_name(ModelType.CHAT)
+        self.embedding_model = get_model_name(ModelType.EMBEDDING)
+
 ###############################################################################
 # 1. Personality State Management
 ###############################################################################
@@ -545,7 +554,7 @@ class ContextualVectorStore:
     def create_embedding(self, text: str) -> List[float]:
         """Create embedding using OpenAI's text-embedding-3-small"""
         response = openai_client.embeddings.create(
-            model="text-embedding-3-small",
+            model=self.embedding_model,
             input=text,
             encoding_format="float"
         )
@@ -944,7 +953,7 @@ class FollowManager:
         formatted_prompt = prompt.format(**context)
         
         response = await anthropic_client.messages.create(
-            model="claude-3-haiku-20240307",
+            model=self.chat_model,
             max_tokens=1000,
             temperature=0.0,
             messages=[{

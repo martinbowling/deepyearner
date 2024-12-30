@@ -11,6 +11,7 @@ from content_processor import ContentProcessor
 from content_fetcher import ContentFetcher
 from search_system import SearchSystem, SearchConfig
 from personality_system import PersonalitySystem
+from config import ModelType, get_model_name
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +57,8 @@ class ResearchManager:
         self.client = anthropic_client
         self.search_config = search_config
         self.processor = ContentProcessor(anthropic_client)
+        self.research_model = get_model_name(ModelType.RESEARCH)
+        self.content_model = get_model_name(ModelType.CONTENT_GENERATION)
         
         # Research state
         self.research_topics: Dict[str, ResearchTopic] = {}
@@ -219,7 +222,7 @@ Return in JSON format:
 }}"""
             
             response = await self.client.messages.create(
-                model="claude-3-opus-20240229",
+                model=self.research_model,
                 max_tokens=1000,
                 temperature=0.7,
                 messages=[{
@@ -447,7 +450,7 @@ Return in JSON format:
 }}"""
             
             response = await self.client.messages.create(
-                model="claude-3-opus-20240229",
+                model=self.research_model,
                 max_tokens=1500,
                 temperature=0,
                 messages=[{
