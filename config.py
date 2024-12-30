@@ -39,9 +39,9 @@ class ModelProvider(Enum):
 # Model configurations
 MODELS = {
     ModelType.CONTENT_GENERATION: ModelConfig(
-        name="claude-3-opus-20240229",
+        name="claude-3-5-sonnet-20241022",
         provider=ModelProvider.ANTHROPIC.value,
-        version="2024-02-29",
+        version="2024-10-22",
         context_window=200000,
         cost_per_1k_tokens=0.015,
         capabilities=["text generation", "reasoning", "analysis"],
@@ -69,9 +69,9 @@ MODELS = {
     ),
     
     ModelType.VISION: ModelConfig(
-        name="claude-3-opus-20240229",  # Supports vision tasks
+        name="claude-3-5-sonnet-20241022",  # Supports vision tasks
         provider=ModelProvider.ANTHROPIC.value,
-        version="2024-02-29",
+        version="2024-10-22",
         context_window=200000,
         cost_per_1k_tokens=0.015,
         capabilities=["image analysis", "visual reasoning", "multimodal tasks"],
@@ -79,9 +79,9 @@ MODELS = {
     ),
     
     ModelType.CODE: ModelConfig(
-        name="claude-3-opus-20240229",
+        name="claude-3-5-sonnet-20241022",
         provider=ModelProvider.ANTHROPIC.value,
-        version="2024-02-29",
+        version="2024-10-22",
         context_window=200000,
         cost_per_1k_tokens=0.015,
         capabilities=["code generation", "code analysis", "debugging"],
@@ -89,9 +89,9 @@ MODELS = {
     ),
     
     ModelType.RESEARCH: ModelConfig(
-        name="claude-3-opus-20240229",
+        name="claude-3-5-sonnet-20241022",
         provider=ModelProvider.ANTHROPIC.value,
-        version="2024-02-29",
+        version="2024-10-22",
         context_window=200000,
         cost_per_1k_tokens=0.015,
         capabilities=["research", "analysis", "synthesis"],
@@ -109,9 +109,9 @@ MODELS = {
     ),
     
     ModelType.SUMMARIZATION: ModelConfig(
-        name="claude-3-opus-20240229",
+        name="claude-3-5-sonnet-20241022",
         provider=ModelProvider.ANTHROPIC.value,
-        version="2024-02-29",
+        version="2024-10-22",
         context_window=200000,
         cost_per_1k_tokens=0.015,
         capabilities=["summarization", "key point extraction"],
