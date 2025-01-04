@@ -1,140 +1,118 @@
 """
-Centralized configuration for all AI models and related settings.
+Central configuration management for DeepYearner.
+Handles loading and validating all configuration values.
 """
-from enum import Enum
-from typing import Dict, Any
 import os
+from typing import Dict, Any
 from dataclasses import dataclass
-
-class ModelType(Enum):
-    """Types of AI models used in the system"""
-    CONTENT_GENERATION = "content_generation"  # For generating text content
-    CONTENT_ANALYSIS = "content_analysis"      # For analyzing content
-    CHAT = "chat"                             # For interactive chat
-    EMBEDDING = "embedding"                    # For generating embeddings
-    VISION = "vision"                         # For image analysis
-    CODE = "code"                             # For code-related tasks
-    RESEARCH = "research"                     # For research tasks
-    CHUNKING = "chunking"                     # For text chunking decisions
-    SUMMARIZATION = "summarization"           # For text summarization
+from dotenv import load_dotenv
 
 @dataclass
-class ModelConfig:
-    """Configuration for an AI model"""
-    name: str
-    provider: str
-    version: str
-    context_window: int
-    cost_per_1k_tokens: float
-    capabilities: list[str]
-    recommended_tasks: list[str]
+class DatabaseConfig:
+    """Database configuration settings"""
+    path: str = "bot.db"
+    max_connections: int = 5
+    timeout: float = 30.0
+    retry_attempts: int = 3
+    retry_delay: float = 1.0
 
-class ModelProvider(Enum):
-    """AI model providers"""
-    ANTHROPIC = "anthropic"
-    OPENAI = "openai"
-    HUGGINGFACE = "huggingface"
-    COHERE = "cohere"
+@dataclass
+class TwitterConfig:
+    """Twitter API configuration settings"""
+    tweet_batch_size: int = 100
+    max_daily_tweets: int = 50
+    max_daily_follows: int = 50
+    max_daily_likes: int = 100
+    rate_limit_buffer: float = 0.1  # 10% buffer on rate limits
 
-# Model configurations
-MODELS = {
-    ModelType.CONTENT_GENERATION: ModelConfig(
-        name="claude-3-5-sonnet-20241022",
-        provider=ModelProvider.ANTHROPIC.value,
-        version="2024-10-22",
-        context_window=200000,
-        cost_per_1k_tokens=0.015,
-        capabilities=["text generation", "reasoning", "analysis"],
-        recommended_tasks=["long-form content", "detailed analysis", "research synthesis"]
-    ),
-    
-    ModelType.CHAT: ModelConfig(
-        name="claude-3-haiku-20240307",
-        provider=ModelProvider.ANTHROPIC.value,
-        version="2024-03-07",
-        context_window=128000,
-        cost_per_1k_tokens=0.003,
-        capabilities=["chat", "quick responses", "basic analysis"],
-        recommended_tasks=["user interaction", "quick replies", "basic queries"]
-    ),
-    
-    ModelType.EMBEDDING: ModelConfig(
-        name="text-embedding-3-small",
-        provider=ModelProvider.OPENAI.value,
-        version="2024-01",
-        context_window=8191,
-        cost_per_1k_tokens=0.00002,
-        capabilities=["text embeddings", "semantic search"],
-        recommended_tasks=["document indexing", "similarity search", "clustering"]
-    ),
-    
-    ModelType.VISION: ModelConfig(
-        name="claude-3-5-sonnet-20241022",  # Supports vision tasks
-        provider=ModelProvider.ANTHROPIC.value,
-        version="2024-10-22",
-        context_window=200000,
-        cost_per_1k_tokens=0.015,
-        capabilities=["image analysis", "visual reasoning", "multimodal tasks"],
-        recommended_tasks=["image understanding", "visual content analysis"]
-    ),
-    
-    ModelType.CODE: ModelConfig(
-        name="claude-3-5-sonnet-20241022",
-        provider=ModelProvider.ANTHROPIC.value,
-        version="2024-10-22",
-        context_window=200000,
-        cost_per_1k_tokens=0.015,
-        capabilities=["code generation", "code analysis", "debugging"],
-        recommended_tasks=["code review", "refactoring", "bug fixing"]
-    ),
-    
-    ModelType.RESEARCH: ModelConfig(
-        name="claude-3-5-sonnet-20241022",
-        provider=ModelProvider.ANTHROPIC.value,
-        version="2024-10-22",
-        context_window=200000,
-        cost_per_1k_tokens=0.015,
-        capabilities=["research", "analysis", "synthesis"],
-        recommended_tasks=["literature review", "data analysis", "research planning"]
-    ),
-    
-    ModelType.CHUNKING: ModelConfig(
-        name="claude-3-haiku-20240307",
-        provider=ModelProvider.ANTHROPIC.value,
-        version="2024-03-07",
-        context_window=128000,
-        cost_per_1k_tokens=0.003,
-        capabilities=["text analysis", "content structuring"],
-        recommended_tasks=["document segmentation", "content chunking"]
-    ),
-    
-    ModelType.SUMMARIZATION: ModelConfig(
-        name="claude-3-5-sonnet-20241022",
-        provider=ModelProvider.ANTHROPIC.value,
-        version="2024-10-22",
-        context_window=200000,
-        cost_per_1k_tokens=0.015,
-        capabilities=["summarization", "key point extraction"],
-        recommended_tasks=["document summarization", "content distillation"]
-    )
-}
+@dataclass
+class AnalysisConfig:
+    """User analysis configuration settings"""
+    min_tweets_analyze: int = 20
+    max_tweets_analyze: int = 100
+    engagement_weight: float = 0.4
+    topic_weight: float = 0.4
+    interaction_weight: float = 0.2
+    auto_follow_threshold: float = 0.8
+    high_engagement_threshold: float = 0.7
 
-def get_model_config(model_type: ModelType) -> ModelConfig:
-    """Get configuration for a specific model type"""
-    return MODELS[model_type]
+@dataclass
+class LoggingConfig:
+    """Logging configuration settings"""
+    log_level: str = "INFO"
+    log_file: str = "bot.log"
+    max_size: int = 10 * 1024 * 1024  # 10MB
+    backup_count: int = 5
+    json_format: bool = True
 
-def get_model_name(model_type: ModelType) -> str:
-    """Get model name for a specific type"""
-    return MODELS[model_type].name
+class Config:
+    """Central configuration management"""
+    
+    def __init__(self):
+        """Initialize configuration"""
+        load_dotenv()
+        
+        self.database = DatabaseConfig()
+        self.twitter = TwitterConfig()
+        self.analysis = AnalysisConfig()
+        self.logging = LoggingConfig()
+        
+        # Load environment overrides
+        self._load_env_overrides()
+        
+        # Validate configuration
+        self._validate_config()
+    
+    def _load_env_overrides(self):
+        """Load overrides from environment variables"""
+        # Database overrides
+        if db_path := os.getenv('DB_PATH'):
+            self.database.path = db_path
+        if max_conn := os.getenv('DB_MAX_CONNECTIONS'):
+            self.database.max_connections = int(max_conn)
+            
+        # Twitter overrides
+        if batch_size := os.getenv('TWITTER_BATCH_SIZE'):
+            self.twitter.tweet_batch_size = int(batch_size)
+        if daily_tweets := os.getenv('MAX_DAILY_TWEETS'):
+            self.twitter.max_daily_tweets = int(daily_tweets)
+            
+        # Analysis overrides
+        if auto_follow := os.getenv('AUTO_FOLLOW_THRESHOLD'):
+            self.analysis.auto_follow_threshold = float(auto_follow)
+        if eng_threshold := os.getenv('HIGH_ENGAGEMENT_THRESHOLD'):
+            self.analysis.high_engagement_threshold = float(eng_threshold)
+            
+        # Logging overrides
+        if log_level := os.getenv('LOG_LEVEL'):
+            self.logging.log_level = log_level
+        if log_file := os.getenv('LOG_FILE'):
+            self.logging.log_file = log_file
+    
+    def _validate_config(self):
+        """Validate configuration values"""
+        # Database validation
+        assert self.database.max_connections > 0, "Max connections must be positive"
+        assert self.database.timeout > 0, "Database timeout must be positive"
+        
+        # Twitter validation
+        assert 0 < self.twitter.tweet_batch_size <= 100, "Tweet batch size must be between 1 and 100"
+        assert self.twitter.max_daily_tweets > 0, "Max daily tweets must be positive"
+        
+        # Analysis validation
+        assert 0 <= self.analysis.engagement_weight <= 1, "Engagement weight must be between 0 and 1"
+        assert 0 <= self.analysis.topic_weight <= 1, "Topic weight must be between 0 and 1"
+        assert 0 <= self.analysis.interaction_weight <= 1, "Interaction weight must be between 0 and 1"
+        total_weight = (self.analysis.engagement_weight + 
+                       self.analysis.topic_weight + 
+                       self.analysis.interaction_weight)
+        assert abs(total_weight - 1.0) < 0.001, "Analysis weights must sum to 1.0"
+        
+        # Logging validation
+        assert self.logging.log_level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"], \
+            "Invalid log level"
+        assert self.logging.max_size > 0, "Log max size must be positive"
+        assert self.logging.backup_count >= 0, "Backup count must be non-negative"
 
-def get_all_models() -> Dict[ModelType, ModelConfig]:
-    """Get all model configurations"""
-    return MODELS
-
-def get_provider_models(provider: ModelProvider) -> Dict[ModelType, ModelConfig]:
-    """Get all models from a specific provider"""
-    return {
-        model_type: config 
-        for model_type, config in MODELS.items() 
-        if config.provider == provider.value
-    }
+# Global configuration instance
+config = Config()
