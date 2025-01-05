@@ -6,6 +6,7 @@ import os
 from typing import Dict, Any
 from dataclasses import dataclass
 from dotenv import load_dotenv
+from pathlib import Path
 
 @dataclass
 class DatabaseConfig:
@@ -45,6 +46,15 @@ class LoggingConfig:
     backup_count: int = 5
     json_format: bool = True
 
+@dataclass
+class VectorDBConfig:
+    """Vector database configuration settings"""
+    path: str = "vector_db"
+    dimension: int = 768  # Default for many embedding models
+    max_elements: int = 10000
+    ef_construction: int = 200
+    M: int = 16
+
 class Config:
     """Central configuration management"""
     
@@ -56,6 +66,7 @@ class Config:
         self.twitter = TwitterConfig()
         self.analysis = AnalysisConfig()
         self.logging = LoggingConfig()
+        self.vector_db = VectorDBConfig()
         
         # Load environment overrides
         self._load_env_overrides()
@@ -70,6 +81,12 @@ class Config:
             self.database.path = db_path
         if max_conn := os.getenv('DB_MAX_CONNECTIONS'):
             self.database.max_connections = int(max_conn)
+            
+        # Vector DB overrides
+        if vector_db_path := os.getenv('VECTOR_DB_PATH'):
+            self.vector_db.path = vector_db_path
+        if vector_dim := os.getenv('VECTOR_DB_DIMENSION'):
+            self.vector_db.dimension = int(vector_dim)
             
         # Twitter overrides
         if batch_size := os.getenv('TWITTER_BATCH_SIZE'):
@@ -95,6 +112,12 @@ class Config:
         assert self.database.max_connections > 0, "Max connections must be positive"
         assert self.database.timeout > 0, "Database timeout must be positive"
         
+        # Vector DB validation
+        assert self.vector_db.dimension > 0, "Vector dimension must be positive"
+        assert self.vector_db.max_elements > 0, "Max elements must be positive"
+        assert self.vector_db.ef_construction > 0, "ef_construction must be positive"
+        assert self.vector_db.M > 0, "M must be positive"
+        
         # Twitter validation
         assert 0 < self.twitter.tweet_batch_size <= 100, "Tweet batch size must be between 1 and 100"
         assert self.twitter.max_daily_tweets > 0, "Max daily tweets must be positive"
@@ -116,3 +139,22 @@ class Config:
 
 # Global configuration instance
 config = Config()
+
+# Export commonly used paths
+VECTOR_DB_PATH = config.vector_db.path
+
+# Load environment variables
+load_dotenv()
+
+# Twitter API Configuration
+TWITTER_CLIENT_ID = os.getenv('TWITTER_CLIENT_ID')
+TWITTER_CLIENT_SECRET = os.getenv('TWITTER_CLIENT_SECRET')
+TWITTER_BEARER_TOKEN = os.getenv('TWITTER_BEARER_TOKEN')
+TWITTER_ACCESS_TOKEN = os.getenv('TWITTER_ACCESS_TOKEN')
+TWITTER_ACCESS_SECRET = os.getenv('TWITTER_ACCESS_SECRET')
+
+# Anthropic Configuration
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+
+# Vector Store Configuration
+VECTOR_DB_PATH = Path("vector_store")

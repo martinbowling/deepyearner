@@ -16,9 +16,22 @@ from memory_system import MemorySystem
 from personality_system import PersonalitySystem
 from vector_store import VectorStore
 from pathlib import Path
+import time
+from anthropic import Anthropic
 
 # Import configuration
-from config import VECTOR_DB_PATH
+from config import VECTOR_DB_PATH, ANTHROPIC_API_KEY
+
+# Set up logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('bot.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
 def analyze_timeline(twitter_api):
     """Analyze the current timeline"""
@@ -139,8 +152,15 @@ async def single_iteration():
         # Initialize components
         twitter_api = get_twitter_client()
         db = sqlite_utils.Database("bot.db")
+        
+        # Ensure database tables exist
+        init_db()
+        
+        # Initialize Anthropic client
+        anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+        
         memory = MemorySystem(db=db, persist_directory=str(VECTOR_DB_PATH))
-        personality = PersonalitySystem(memory)
+        personality = PersonalitySystem(memory, anthropic_client=anthropic_client)
         vector_store = VectorStore(persist_directory=str(VECTOR_DB_PATH))
         
         # Analyze timeline
@@ -150,11 +170,12 @@ async def single_iteration():
         
         # Get context
         context = {
-            'relevant_tweets': [],  # Will be populated by vector search
+            'relevant_tweets': [],
             'running_bits': get_active_bits(db),
-            'mutual_context': {},  # Removed mutual follower context
+            'mutual_context': {},
             'mood_context': timeline_analysis['current_vibe'],
-            'memory_context': memory.get_recent_memories()  # Now properly getting memories
+            'memory_context': memory.get_recent_memories(),
+            'timeline_analysis': timeline_analysis
         }
         
         click.echo("\nContext:")
@@ -167,11 +188,154 @@ async def single_iteration():
         click.echo(f"Mode: {json.dumps(personality_state.get('mode', 'neutral'))}")
         click.echo(f"Energy: {personality_state.get('energy', 1.0)}")
         click.echo(f"Dominant Traits: {json.dumps(personality_state.get('dominant_traits', ['curious', 'analytical']))}")
+
+        # Let Claude decide if we should tweet
+        should_tweet = personality.should_tweet_now(context)
         
+        if should_tweet:
+            # Generate and post content
+            content = personality.generate_content(context)
+            if content:
+                click.echo("\nWould post content:")
+                click.echo("--------------------")
+                click.echo(content)
+                click.echo("--------------------")
+                # Log instead of posting
+                logger.info(f"Generated content: {content}")
+                # Commented out actual posting
+                # try:
+                #     twitter_api.create_tweet(text=content)
+                # except Exception as e:
+                #     click.echo(f"Error posting tweet: {str(e)}")
+
+        # Engage with timeline more selectively
+        if timeline and 'data' in timeline:
+            engaged_count = 0  # Track how many tweets we've engaged with
+            engagement_cooldown = {}  # Track when we last engaged with each user
+            
+            for tweet in timeline['data']:
+                # Only engage with a few tweets per iteration
+                if engaged_count >= 2:  # Reduced from 3 to 2
+                    break
+                    
+                # Get author info
+                author_id = tweet.get('author_id')
+                if not author_id:
+                    continue
+                    
+                # Check if we recently engaged with this user
+                last_engagement = engagement_cooldown.get(author_id, 0)
+                if time.time() - last_engagement < 3600:  # 1 hour cooldown
+                    continue
+                
+                # Decide whether to engage based on personality and context
+                should_engage = personality.should_engage(tweet, context)
+                if should_engage:
+                    metrics = tweet.get('public_metrics', {})
+                    # Be more selective about which tweets to engage with
+                    if (5 <= metrics.get('like_count', 0) <= 100 and
+                        metrics.get('reply_count', 0) < 10):
+                        try:
+                            # Maybe reply
+                            if personality_state['energy'] > 0.7:
+                                reply = personality.generate_reply(tweet, context)
+                                if reply:
+                                    click.echo(f"\nWould reply to tweet {tweet['id']}:")
+                                    click.echo("--------------------")
+                                    click.echo(f"Original: {tweet.get('text', '')}")
+                                    click.echo(f"Reply: {reply}")
+                                    click.echo("--------------------")
+                                    # Log instead of posting
+                                    logger.info(f"Generated reply to {tweet['id']}: {reply}")
+                                    # Update engagement tracking
+                                    engaged_count += 1
+                                    engagement_cooldown[author_id] = time.time()
+                        except Exception as e:
+                            click.echo(f"Error generating reply: {str(e)}")
+        
+        # Process any pending user analyses
+        pending_users = db["analyzed_users"].rows_where("status = 'pending'", limit=5)
+        for user in pending_users:
+            try:
+                user_data = twitter_api.get_user(user['user_id'])
+                if user_data and 'data' in user_data:
+                    user_info = user_data['data']
+                    # Calculate follow score based on bio, tweets, etc.
+                    follow_score = personality.calculate_follow_score(user_info)
+                    # Update analyzed users table
+                    db["analyzed_users"].update(
+                        user['user_id'],
+                        {
+                            "analysis_result": json.dumps(user_info),
+                            "follow_score": follow_score,
+                            "status": "analyzed",
+                            "last_analyzed": datetime.now().isoformat()
+                        }
+                    )
+                    # Maybe follow if score is high enough
+                    if follow_score > 0.8:
+                        twitter_api.follow_user(user['user_id'])
+            except Exception as e:
+                click.echo(f"Error analyzing user {user['user_id']}: {str(e)}")
+                
     except Exception as e:
         click.echo(f"Error in iteration: {str(e)}")
         if "--debug" in sys.argv:
             traceback.print_exc()
+
+async def continuous_run():
+    """Run the bot continuously"""
+    click.echo("Starting continuous run mode...")
+    
+    # Initialize components
+    twitter_api = get_twitter_client()
+    db = sqlite_utils.Database("bot.db")
+    anthropic_client = Anthropic(api_key=ANTHROPIC_API_KEY)
+    memory = MemorySystem(db=db, persist_directory=str(VECTOR_DB_PATH))
+    personality = PersonalitySystem(memory, anthropic_client=anthropic_client)
+    
+    while True:
+        try:
+            # Get recent activity for decision making
+            recent_activity = {
+                'last_tweet': None,
+                'last_reply': None,
+                'last_like': None,
+                'last_retweet': None,
+                'last_quote': None
+            }
+            
+            # Get recent tweets
+            tweets = twitter_api.get_users_tweets(max_results=10)
+            if tweets and 'data' in tweets:
+                for tweet in tweets['data']:
+                    if not recent_activity['last_tweet']:
+                        recent_activity['last_tweet'] = tweet
+                    if tweet.get('referenced_tweets'):
+                        for ref in tweet['referenced_tweets']:
+                            if ref['type'] == 'replied_to' and not recent_activity['last_reply']:
+                                recent_activity['last_reply'] = tweet
+                            elif ref['type'] == 'quoted' and not recent_activity['last_quote']:
+                                recent_activity['last_quote'] = tweet
+                            elif ref['type'] == 'retweeted' and not recent_activity['last_retweet']:
+                                recent_activity['last_retweet'] = tweet
+            
+            # Run single iteration
+            await single_iteration()
+            
+            # Let Claude decide how long to sleep
+            sleep_duration = personality.determine_sleep_duration(recent_activity)
+            
+            click.echo(f"\nSleeping for {sleep_duration} seconds before next iteration...")
+            await asyncio.sleep(sleep_duration)
+            
+        except Exception as e:
+            click.echo(f"Error in continuous run: {str(e)}")
+            if "--debug" in sys.argv:
+                traceback.print_exc()
+            # Sleep for 5 minutes on error before retrying
+            click.echo("\nError occurred, sleeping for 5 minutes before retry...")
+            await asyncio.sleep(300)
 
 def init_db():
     """Initialize database tables"""
@@ -201,6 +365,40 @@ def init_db():
             "context": str,
             "participants": str
         }, pk="id")
+        
+    # Get existing users before dropping the table
+    existing_users = []
+    if "analyzed_users" in db.table_names():
+        existing_users = [row["user_id"] for row in db["analyzed_users"].rows]
+        db["analyzed_users"].drop()
+        
+    # Create fresh analyzed_users table
+    db["analyzed_users"].create({
+        "user_id": str,
+        "last_analyzed": str,
+        "analysis_result": str,
+        "follow_score": float,
+        "status": str,
+        "engagement_rate": float,
+        "topic_alignment": float,
+        "interaction_score": float,
+        "last_interaction": str
+    }, pk="user_id")
+    db["analyzed_users"].create_index(["status"], if_not_exists=True)
+    
+    # Reinsert existing users with pending status
+    for user_id in existing_users:
+        db["analyzed_users"].insert({
+            "user_id": user_id,
+            "last_analyzed": datetime.now().isoformat(),
+            "analysis_result": "{}",
+            "follow_score": 0.0,
+            "status": "pending",
+            "engagement_rate": 0.0,
+            "topic_alignment": 0.0,
+            "interaction_score": 0.0,
+            "last_interaction": ""
+        })
 
 def main():
     """Main entry point"""
@@ -210,15 +408,18 @@ def main():
         
         # Parse command line arguments
         if len(sys.argv) < 2:
-            click.echo("Please specify a command: run-once")
+            click.echo("Please specify a command: run-once, run")
             return
         
         command = sys.argv[1]
         
         if command == "run-once":
             asyncio.run(single_iteration())
+        elif command == "run":
+            asyncio.run(continuous_run())
         else:
             click.echo(f"Unknown command: {command}")
+            click.echo("Available commands: run-once, run")
             
     except Exception as e:
         click.echo(f"Error: {str(e)}")
@@ -233,8 +434,14 @@ def cli():
 @cli.command()
 def run_once():
     """Run one iteration of the bot"""
-    import asyncio
+    init_db()  # Ensure database is initialized
     asyncio.run(single_iteration())
 
+@cli.command()
+def run():
+    """Run the bot continuously"""
+    init_db()  # Ensure database is initialized
+    asyncio.run(continuous_run())
+
 if __name__ == "__main__":
-    main()
+    cli()
