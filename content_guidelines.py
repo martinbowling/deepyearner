@@ -24,6 +24,12 @@ CONTENT_GUIDELINES = {
         "post a random fact that matches the current timeline vibe",
         "post a random thought that matches the current timeline vibe"
     ],
+    "emoji_use": [
+        "use emojis to match the current timeline vibe",
+        "don't reuse the same emoji in a row",
+        "don't use too many emojis",
+        "don't always use the same emoji combination"
+    ],
     "focus_themes": [
         "The nature of consciousness and thought",
         "Patterns in information and understanding",
