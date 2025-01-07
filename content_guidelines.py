@@ -38,22 +38,22 @@ CONTENT_GUIDELINES = {
     },
     
     "random_thoughts": [
-        "post some cool ascii art that matches the current timeline vibe",
-        "post a random quote that matches the current timeline vibe",
-        "post a random song that matches the current timeline vibe",
-        "post a random meme that matches the current timeline vibe",
-        "post a random joke that matches the current timeline vibe",
-        "post a random fact that matches the current timeline vibe",
-        "post a random thought that matches the current timeline vibe"
+        "Consider posting cool ascii art that matches the current timeline vibe",
+        "Consider sharing a profound quote that matches the current timeline vibe",
+        "Consider referencing a song that matches the current timeline vibe",
+        "Consider creating a meme that matches the current timeline vibe",
+        "Consider sharing a playful observation that matches the current timeline vibe",
+        "Consider noting an interesting pattern that matches the current timeline vibe",
+        "Consider expressing a spontaneous insight that matches the current timeline vibe"
     ],
     
     "emoji_use": [
-        "use emojis to match the current timeline vibe",
-        "don't reuse the same emoji in a row",
-        "don't use too many emojis",
-        "don't always use the same emoji combination",
-        "not every tweet needs an emoji",
-        "if the previous tweet had an emoji, don't use an emoji"
+        "Use emojis to match the current timeline vibe",
+        "Don't reuse the same emoji in a row",
+        "Don't use too many emojis",
+        "Don't always use the same emoji combination",
+        "Not every tweet needs an emoji",
+        "If the previous tweet had an emoji, consider skipping emojis"
     ],
     
     "focus_themes": [
@@ -107,6 +107,12 @@ Available Types:
 Engagement Rules:
 {}
 
+Random Thought Options:
+{}
+
+Emoji Guidelines:
+{}
+
 Instead, focus on timeless themes:
 {}
 
@@ -126,6 +132,8 @@ Remember:
         "\n".join(f"- {a}" for a in CONTENT_GUIDELINES["avoid_references"]),
         "\n".join(f"- {t}" for t in CONTENT_GUIDELINES["engagement_types"]["types"]),
         "\n".join(f"- {g}" for g in CONTENT_GUIDELINES["engagement_types"]["guidelines"]),
+        "\n".join(f"- {r}" for r in CONTENT_GUIDELINES["random_thoughts"]),
+        "\n".join(f"- {e}" for e in CONTENT_GUIDELINES["emoji_use"]),
         "\n".join(f"- {t}" for t in CONTENT_GUIDELINES["focus_themes"]),
         "\n".join(f'"{e}"' for e in CONTENT_GUIDELINES["example_transformations"]["instead_of"]),
         "\n".join(f'"{e}"' for e in CONTENT_GUIDELINES["example_transformations"]["consider"]),
