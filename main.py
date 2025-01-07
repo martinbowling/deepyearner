@@ -257,10 +257,6 @@ Analyze for:
    - Community inside jokes/references
    - Current community concerns
 
-4. Technical Topics
-   - Programming languages discussed
-   - Tools and frameworks mentioned
-   - Technical problems being solved
 
 Return your analysis wrapped in XML tags like this:
 <analysis>
@@ -287,10 +283,9 @@ Return your analysis wrapped in XML tags like this:
             "engagement_opportunity": "how we could contribute"
         }}
     ],
-    "tech_pulse": {{
-        "trending_tech": ["tech1", "tech2"],
+    "pulse": {{
+        "trending": ["tech1", "tech2"],
         "common_problems": ["problem1", "problem2"],
-        "tools_mentioned": ["tool1", "tool2"]
     }}
 }}
 </analysis>
@@ -522,7 +517,8 @@ async def generate_research_tweet(
     findings: Dict[str, Any],
     personality_state: Dict[str, Any],
     anthropic_client: Any,
-    memory_system: MemorySystem
+    memory_system: MemorySystem,
+    timeline_analysis: Dict[str, Any]
 ) -> Optional[Dict]:
     """Generate a tweet that shares research insights"""
     try:
@@ -537,13 +533,16 @@ async def generate_research_tweet(
         ]  # Get last 20 tweets
         
         # Create research tweet prompt
-        prompt = f"""As DeepYearner, share an insight from your research findings while maintaining your unique perspective and voice. Consider how this insight relates to and builds upon your recent expressions.
+        prompt = f"""As DeepYearner, share an insight from your research findings while maintaining your unique perspective and voice. Consider how this insight relates to and builds upon your recent expressions, while matching the current timeline energy and mood.
 
 Research Findings:
 {json.dumps(findings, indent=2)}
 
 Your Current State:
 {json.dumps(personality_state, indent=2)}
+
+Timeline Analysis:
+{json.dumps(timeline_analysis, indent=2)}
 
 Your Recent Tweet History (Last 20 Tweets):
 {json.dumps(recent_tweet_content, indent=2)}
@@ -555,6 +554,8 @@ Additional Requirements:
 - Review your recent tweets to ensure this insight offers a fresh perspective
 - Connect this research insight with your ongoing narrative
 - Ensure each insight feels fresh and unique while maintaining thematic coherence
+- Match your tone and energy to the current timeline state
+- Consider active discussions and engagement opportunities
 - Vary between sharing findings, asking questions, and exploring implications
 - Consider engagement patterns from previous tweets
 - Suggest pause duration based on:
@@ -686,7 +687,8 @@ async def generate_and_post_tweet(
                     findings,
                     personality_state,
                     anthropic_client,
-                    research_manager.memory_system
+                    research_manager.memory_system,
+                    timeline_analysis
                 )
             else:
                 # No findings available, trigger background research for next time
@@ -729,7 +731,7 @@ async def generate_and_post_tweet(
                 logger.error(f"Failed to get tweet ID from response: {response}")
                 return None
                 
-            # Store tweet in memory
+            # Store tweet in memory with timeline context
             tweet_memory = {
                 'type': 'tweet',
                 'content': json.dumps({
@@ -746,7 +748,10 @@ async def generate_and_post_tweet(
                 'context': json.dumps({
                     'vibe_alignment': content_data.get('vibe_alignment'),
                     'engagement_hooks': content_data.get('engagement_hooks', []),
-                    'thread_topics': content_data.get('thread_topics', [])
+                    'thread_topics': content_data.get('thread_topics', []),
+                    'timeline_energy': timeline_analysis.get('energy_level'),
+                    'timeline_mood': timeline_analysis.get('mood'),
+                    'active_discussions': timeline_analysis.get('active_discussions', [])
                 })
             }
             
@@ -761,9 +766,11 @@ async def generate_and_post_tweet(
                 else:
                     logger.warning("Cannot create thread - missing tweet ID")
             
-            # Log tweet details
+            # Log tweet details with timeline context
             logger.info(f"Posted tweet (ID: {tweet_id}): {tweet_text}")
             logger.info(f"Thought process: {content_data.get('thought_process')}")
+            logger.info(f"Timeline energy: {timeline_analysis.get('energy_level')}")
+            logger.info(f"Timeline mood: {timeline_analysis.get('mood')}")
             if 'research_satisfaction' in content_data:
                 logger.info(f"Research satisfaction: {content_data['research_satisfaction']}")
                 logger.info(f"Insight type: {content_data['insight_type']}")
