@@ -402,14 +402,16 @@ async def generate_content(
     """Generate tweet content"""
     try:
         # Get recent tweets for context
-        recent_tweets = await memory_system.get_recent_memories(hours=24)
+        recent_tweets = await memory_system.get_recent_memories(
+            memory_type='tweet',
+            limit=20
+        )
         recent_tweet_content = [
-            json.loads(m.content) for m in recent_tweets 
-            if m.type == 'tweet'
-        ][-5:]  # Get last 5 tweets
+            json.loads(m.content) for m in recent_tweets
+        ]  # Get last 20 tweets
         
         # Create content generation prompt
-        prompt = f"""As DeepYearner, share your thoughts while considering the current timeline state.
+        prompt = f"""As DeepYearner, share your thoughts while considering both the current timeline state and your recent tweet history. Ensure your new thought builds on or diverges meaningfully from your previous expressions.
 
 Timeline Analysis:
 {json.dumps(timeline_analysis, indent=2)}
@@ -417,15 +419,16 @@ Timeline Analysis:
 Your Current State:
 {json.dumps(personality_state, indent=2)}
 
-Your Recent Tweets:
+Your Recent Tweet History (Last 20 Tweets):
 {json.dumps(recent_tweet_content, indent=2)}
 
 {get_guidelines_prompt()}
 
 Additional Requirements:
 - Keep tweets under 280 characters
-- Avoid repeating similar topics/tone to your recent tweets
-- Ensure unique voice and perspective
+- Carefully review your recent tweets to avoid repetition in topics, themes, or tone
+- Ensure each tweet adds a new dimension to your ongoing narrative
+- Consider how this tweet will complement or contrast with your recent expressions
 - Vary between questions, observations, and insights
 - Consider engagement patterns from previous tweets
 - Suggest pause duration based on:
@@ -524,14 +527,16 @@ async def generate_research_tweet(
     """Generate a tweet that shares research insights"""
     try:
         # Get recent tweets for context
-        recent_tweets = await memory_system.get_recent_memories(hours=24)
+        recent_tweets = await memory_system.get_recent_memories(
+            memory_type='tweet',
+            limit=20
+        )
         recent_tweet_content = [
-            json.loads(m.content) for m in recent_tweets 
-            if m.type == 'tweet'
-        ][-5:]  # Get last 5 tweets
+            json.loads(m.content) for m in recent_tweets
+        ]  # Get last 20 tweets
         
         # Create research tweet prompt
-        prompt = f"""As DeepYearner, share an insight from your research findings while maintaining your unique perspective and voice.
+        prompt = f"""As DeepYearner, share an insight from your research findings while maintaining your unique perspective and voice. Consider how this insight relates to and builds upon your recent expressions.
 
 Research Findings:
 {json.dumps(findings, indent=2)}
@@ -539,15 +544,16 @@ Research Findings:
 Your Current State:
 {json.dumps(personality_state, indent=2)}
 
-Your Recent Tweets:
+Your Recent Tweet History (Last 20 Tweets):
 {json.dumps(recent_tweet_content, indent=2)}
 
 {get_guidelines_prompt()}
 
 Additional Requirements:
 - Keep tweets under 280 characters
-- Avoid repeating similar research insights from recent tweets
-- Ensure each insight feels fresh and unique
+- Review your recent tweets to ensure this insight offers a fresh perspective
+- Connect this research insight with your ongoing narrative
+- Ensure each insight feels fresh and unique while maintaining thematic coherence
 - Vary between sharing findings, asking questions, and exploring implications
 - Consider engagement patterns from previous tweets
 - Suggest pause duration based on:
