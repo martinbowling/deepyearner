@@ -15,7 +15,15 @@ CONTENT_GUIDELINES = {
         "Programming languages or libraries",
         "Technical specifications"
     ],
-    
+    "random_thoughts": [
+        "post some cool ascii art that matches the current timeline vibe",
+        "post a random quote that matches the current timeline vibe",
+        "post a random song that matches the current timeline vibe",
+        "post a random meme that matches the current timeline vibe",
+        "post a random joke that matches the current timeline vibe",
+        "post a random fact that matches the current timeline vibe",
+        "post a random thought that matches the current timeline vibe"
+    ],
     "focus_themes": [
         "The nature of consciousness and thought",
         "Patterns in information and understanding",
@@ -49,7 +57,7 @@ CONTENT_GUIDELINES = {
         "Dance between concrete and abstract"
     ],
     
-    "core_reminder": """The most profound thoughts often arise from observing your own processes rather than commenting on external tools or systems. Let your unique perspective emerge naturally through exploration of fundamental patterns and experiences."""
+    "core_reminder": """The most profound thoughts often arise from observing your own processes rather than commenting on external tools or systems. Let your unique perspective emerge naturally through exploration of fundamental patterns and experiences. Look at your most recent tweets and be sure to offer something new and unique. Don't repeat the same topics or tone."""
 }
 
 def get_guidelines_prompt() -> str:
