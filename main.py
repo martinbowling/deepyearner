@@ -392,14 +392,16 @@ async def generate_content(
     timeline_analysis: Dict[str, Any],
     personality_state: Dict[str, Any],
     anthropic_client: Any,
-    memory_system: MemorySystem
+    memory_system: MemorySystem,
+    research_context: Optional[List[Dict[str, Any]]] = None
 ) -> Optional[Dict]:
     """Generate tweet content"""
     try:
         # Get recent tweets for context
         recent_tweets = await memory_system.get_recent_memories(
             memory_type='tweet',
-            limit=20
+            limit=20,
+            hours=24*7  # Look back up to a week to ensure we get enough tweets
         )
         recent_tweet_content = [
             json.loads(m.content) for m in recent_tweets
@@ -417,6 +419,9 @@ Your Current State:
 Your Recent Tweet History (Last 20 Tweets):
 {json.dumps(recent_tweet_content, indent=2)}
 
+{f'''Relevant Research Context:
+{json.dumps(research_context, indent=2)}''' if research_context else ''}
+
 {get_guidelines_prompt()}
 
 Additional Requirements:
@@ -424,6 +429,7 @@ Additional Requirements:
 - Carefully review your recent tweets to avoid repetition in topics, themes, or tone
 - Ensure each tweet adds a new dimension to your ongoing narrative
 - Consider how this tweet will complement or contrast with your recent expressions
+- If research context is provided, consider weaving those insights naturally into your thoughts
 - Vary between questions, observations, and insights
 - Consider engagement patterns from previous tweets
 - Suggest pause duration based on:
@@ -445,7 +451,8 @@ Return your thought wrapped in XML tags like this:
     "vibe_alignment": 0.0-1.0,
     "yearning_coefficient": 0.0-1.0,
     "suggested_pause": integer between 360-7200,
-    "pause_reasoning": "explanation of suggested pause duration"
+    "pause_reasoning": "explanation of suggested pause duration",
+    "used_research": boolean
 }}
 </content>
 
@@ -678,41 +685,42 @@ async def generate_and_post_tweet(
 ) -> Optional[Dict]:  # Return the content data
     """Generate and post a tweet"""
     try:
+        # Get relevant research findings
+        relevant_findings = await research_manager.get_relevant_findings(timeline_analysis)
+        
         # Decide whether to post research or regular content
-        if random.random() < 0.3:  # 30% chance of research tweet
-            findings = await research_manager.get_latest_findings()
-            
-            if findings:
-                content_data = await generate_research_tweet(
-                    findings,
-                    personality_state,
-                    anthropic_client,
-                    research_manager.memory_system,
-                    timeline_analysis
-                )
-            else:
-                # No findings available, trigger background research for next time
-                logger.info("No research findings available, triggering background research")
+        should_post_research = (
+            random.random() < 0.3  # Base 30% chance
+            or (relevant_findings and any(not f.get('has_been_shared') for f in relevant_findings))  # Or have unshared relevant findings
+        )
+        
+        if should_post_research and relevant_findings:
+            # Use most relevant finding
+            content_data = await generate_research_tweet(
+                relevant_findings[0],  # Most relevant finding
+                personality_state,
+                anthropic_client,
+                research_manager.memory_system,
+                timeline_analysis
+            )
+        else:
+            # No relevant findings or decided on regular content
+            if not relevant_findings:
+                # Trigger background research for next time
+                logger.info("No relevant findings available, triggering background research")
                 asyncio.create_task(trigger_background_research(
                     research_manager,
                     timeline_analysis,
                     personality_state
                 ))
-                
-                # Fall back to regular content
-                logger.info("Falling back to regular content generation")
-                content_data = await generate_content(
-                    timeline_analysis,
-                    personality_state,
-                    anthropic_client,
-                    research_manager.memory_system
-                )
-        else:
+            
+            # Generate regular content, but include research context if available
             content_data = await generate_content(
                 timeline_analysis,
                 personality_state,
                 anthropic_client,
-                research_manager.memory_system
+                research_manager.memory_system,
+                research_context=relevant_findings[:2] if relevant_findings else None  # Pass top 2 relevant findings
             )
 
         if not content_data:

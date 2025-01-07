@@ -352,48 +352,108 @@ Return your analysis in this exact format:
         """Get current state of a research topic"""
         return self.research_topics.get(topic) 
 
-    async def get_latest_findings(self) -> Optional[Dict[str, Any]]:
-        """Get the latest research findings from memory"""
+    async def get_latest_findings(self, limit: int = 5) -> List[Dict[str, Any]]:
+        """Get the latest research findings from memory, with option to get multiple"""
         try:
             # Get recent research memories
             recent_memories = await self.memory_system.get_recent_memories(
-                hours=24,
-                limit=10
+                memory_type='research',
+                limit=limit
             )
             
-            # Filter for research findings
-            research_memories = [
-                memory for memory in recent_memories 
-                if memory.type == 'research_finding'
-            ]
-            
-            if not research_memories:
-                return None
-                
-            # Get most recent finding
-            latest_finding = research_memories[0]
-            
-            try:
-                # Parse the content as JSON
-                finding_data = json.loads(latest_finding.content)
-                
-                # Add metadata
-                finding_data.update({
-                    'timestamp': latest_finding.timestamp,
-                    'context': json.loads(latest_finding.context) if latest_finding.context else {},
-                    'source': latest_finding.source
-                })
-                
-                return finding_data
-                
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse research finding content: {latest_finding.content}")
-                return None
+            findings_list = []
+            for memory in recent_memories:
+                try:
+                    # Parse the content as JSON
+                    finding_data = json.loads(memory.content)
+                    
+                    # Add metadata
+                    finding_data.update({
+                        'timestamp': memory.timestamp,
+                        'context': json.loads(memory.context) if memory.context else {},
+                        'source': memory.source,
+                        'has_been_shared': self._has_finding_been_shared(finding_data)
+                    })
+                    
+                    findings_list.append(finding_data)
+                    
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to parse research finding content: {memory.content}")
+                    continue
+                    
+            return findings_list
                 
         except Exception as e:
             logger.error(f"Error getting latest findings: {str(e)}")
             logger.error(traceback.format_exc())
-            return None
+            return []
+
+    def _has_finding_been_shared(self, finding: Dict[str, Any]) -> bool:
+        """Check if a research finding has been shared in a tweet"""
+        try:
+            # Get tweets that reference this finding
+            cursor = self.memory_system.db.cursor()
+            cursor.execute("""
+                SELECT COUNT(*) FROM memories 
+                WHERE type = 'tweet' 
+                AND content LIKE ?
+            """, (f"%{finding.get('key_findings', [])[0].get('finding', '')}%",))
+            
+            count = cursor.fetchone()[0]
+            return count > 0
+            
+        except Exception as e:
+            logger.error(f"Error checking if finding was shared: {str(e)}")
+            return False
+
+    async def get_relevant_findings(
+        self,
+        timeline_analysis: Dict[str, Any],
+        limit: int = 3
+    ) -> List[Dict[str, Any]]:
+        """Get research findings relevant to current timeline discussions"""
+        try:
+            # Get recent findings
+            all_findings = await self.get_latest_findings(limit=10)
+            
+            # Score findings based on relevance
+            scored_findings = []
+            for finding in all_findings:
+                score = 0
+                
+                # Prioritize unshared findings
+                if not finding.get('has_been_shared', False):
+                    score += 2
+                
+                # Check relevance to active discussions
+                for discussion in timeline_analysis.get('active_discussions', []):
+                    if any(
+                        topic.lower() in discussion['topic'].lower() 
+                        for topic in finding.get('topics', [])
+                    ):
+                        score += 1
+                
+                # Consider timeline energy
+                timeline_energy = timeline_analysis.get('energy_level', 0.5)
+                finding_depth = finding.get('research_quality', {}).get('depth', 0.5)
+                
+                # Match deep research with calmer timeline
+                if timeline_energy < 0.4 and finding_depth > 0.7:
+                    score += 1
+                # Match lighter research with high energy
+                elif timeline_energy > 0.7 and finding_depth < 0.5:
+                    score += 1
+                
+                scored_findings.append((score, finding))
+            
+            # Sort by score and return top findings
+            scored_findings.sort(key=lambda x: x[0], reverse=True)
+            return [f[1] for f in scored_findings[:limit]]
+            
+        except Exception as e:
+            logger.error(f"Error getting relevant findings: {str(e)}")
+            logger.error(traceback.format_exc())
+            return []
 
     async def add_research_finding(self, finding: Dict[str, Any]) -> None:
         """Add a new research finding to memory"""
