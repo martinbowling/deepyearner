@@ -1,3 +1,4 @@
+"""OAuth setup for Twitter API v2"""
 from flask import Flask, request, redirect, session
 import os
 import requests
@@ -22,15 +23,31 @@ REDIRECT_URI = 'http://127.0.0.1:5000/oauth/callback'
 
 # Define scopes individually for clarity
 SCOPES = [
-    'tweet.read',
-    'tweet.write',
-    'users.read',
-    'follows.read',
-    'follows.write',
-    'like.read',
-    'like.write',
-    'offline.access'
+    "tweet.read",
+    "tweet.write",
+    "users.read",
+    "follows.read",
+    "follows.write",
+    "offline.access",
+    "list.read",
+    "list.write"
 ]
+
+def init_db():
+    """Initialize database with oauth_tokens table"""
+    conn = sqlite3.connect('bot.db')
+    c = conn.cursor()
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS oauth_tokens (
+            id INTEGER PRIMARY KEY,
+            access_token TEXT,
+            refresh_token TEXT,
+            expires_at TEXT,
+            token_type TEXT
+        )
+    ''')
+    conn.commit()
+    conn.close()
 
 def generate_code_verifier() -> str:
     """Generate a code verifier for PKCE"""
@@ -43,9 +60,92 @@ def generate_code_challenge(verifier: str) -> str:
     code_challenge = base64.urlsafe_b64encode(code_challenge).decode('utf-8').replace('=', '')
     return code_challenge
 
+def init_oauth_tokens():
+    """Initialize OAuth tokens in the database"""
+    load_dotenv()
+    
+    # Get credentials from environment
+    client_id = os.getenv('OAUTH_CLIENT_ID')
+    client_secret = os.getenv('OAUTH_CLIENT_SECRET')
+    
+    if not client_id or not client_secret:
+        raise Exception("Missing OAuth credentials in environment")
+    
+    # Try user authentication first
+    auth = (client_id, client_secret)
+    response = requests.post(
+        'https://api.twitter.com/2/oauth2/token',
+        auth=auth,
+        headers={
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        data={
+            'grant_type': 'client_credentials',
+            'client_id': client_id,
+            'client_secret': client_secret
+        }
+    )
+    
+    if response.status_code != 200:
+        print(f"Error getting access token: {response.text}")
+        print("Starting OAuth web flow for user authentication...")
+        app.run(debug=True, port=5000)
+        return
+    
+    token_data = response.json()
+    
+    # Store tokens in database
+    conn = sqlite3.connect('bot.db')
+    c = conn.cursor()
+    
+    # Create table if it doesn't exist
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS oauth_tokens (
+            id INTEGER PRIMARY KEY,
+            access_token TEXT NOT NULL,
+            refresh_token TEXT,
+            expires_at TEXT NOT NULL,
+            token_type TEXT NOT NULL
+        )
+    ''')
+    
+    # Insert or update tokens
+    c.execute('''
+        INSERT OR REPLACE INTO oauth_tokens (id, access_token, refresh_token, expires_at, token_type)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (
+        1,
+        token_data['access_token'],
+        token_data.get('refresh_token'),
+        (datetime.now() + timedelta(seconds=token_data['expires_in'])).isoformat(),
+        token_data['token_type']
+    ))
+    
+    conn.commit()
+    conn.close()
+    
+    print("OAuth tokens initialized successfully")
+
+def get_authorization_url(client_id: str, redirect_uri: str, code_challenge: str, state: str) -> str:
+    """Get the authorization URL for OAuth 2.0"""
+    scope = " ".join(SCOPES)
+    return (
+        "https://twitter.com/i/oauth2/authorize"
+        f"?response_type=code"
+        f"&client_id={client_id}"
+        f"&redirect_uri={redirect_uri}"
+        f"&scope={scope}"
+        f"&state={state}"
+        f"&code_challenge={code_challenge}"
+        "&code_challenge_method=S256"
+    )
+
 @app.route('/')
 def home():
     """Start OAuth flow"""
+    # Initialize database
+    init_db()
+    
     # Generate PKCE codes
     code_verifier = generate_code_verifier()
     code_challenge = generate_code_challenge(code_verifier)
@@ -69,16 +169,7 @@ def home():
     print(f"State: {state}")
     
     # Generate authorization URL
-    auth_url = (
-        'https://twitter.com/i/oauth2/authorize'
-        f'?response_type=code'
-        f'&client_id={CLIENT_ID}'
-        f'&redirect_uri={REDIRECT_URI}'
-        f'&scope={scope}'
-        f'&state={state}'
-        '&code_challenge_method=S256'
-        f'&code_challenge={code_challenge}'
-    )
+    auth_url = get_authorization_url(CLIENT_ID, REDIRECT_URI, code_challenge, state)
     
     return redirect(auth_url)
 
@@ -134,41 +225,20 @@ def callback():
         conn = sqlite3.connect('bot.db')
         c = conn.cursor()
         
-        try:
-            # Try to add token_type column if it doesn't exist
-            c.execute('ALTER TABLE oauth_tokens ADD COLUMN token_type TEXT')
-        except sqlite3.OperationalError:
-            # Column already exists, ignore the error
-            pass
-            
         # Calculate expiration time
         expires_at = (datetime.now() + timedelta(seconds=token_data['expires_in'])).isoformat()
         
-        try:
-            # Try to insert with token_type
-            c.execute('''
-                INSERT OR REPLACE INTO oauth_tokens 
-                (id, access_token, refresh_token, expires_at, token_type)
-                VALUES (?, ?, ?, ?, ?)
-            ''', (
-                1, 
-                token_data['access_token'],
-                token_data['refresh_token'],
-                expires_at,
-                token_data.get('token_type', 'Bearer')
-            ))
-        except sqlite3.OperationalError:
-            # Fall back to old schema if token_type column doesn't exist
-            c.execute('''
-                INSERT OR REPLACE INTO oauth_tokens 
-                (id, access_token, refresh_token, expires_at)
-                VALUES (?, ?, ?, ?)
-            ''', (
-                1, 
-                token_data['access_token'],
-                token_data['refresh_token'],
-                expires_at
-            ))
+        c.execute('''
+            INSERT OR REPLACE INTO oauth_tokens 
+            (id, access_token, refresh_token, expires_at, token_type)
+            VALUES (?, ?, ?, ?, ?)
+        ''', (
+            1, 
+            token_data['access_token'],
+            token_data['refresh_token'],
+            expires_at,
+            token_data.get('token_type', 'bearer')
+        ))
         
         conn.commit()
         conn.close()

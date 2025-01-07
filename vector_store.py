@@ -61,12 +61,7 @@ class VectorStore:
         self.embedding_model = SentenceTransformer(embedding_model)
         
         # Initialize ChromaDB client
-        self.chroma_client = chromadb.Client(
-            Settings(
-                persist_directory=persist_directory,
-                anonymized_telemetry=False
-            )
-        )
+        self.chroma_client = chromadb.PersistentClient(path=persist_directory)
         
         # Initialize collections
         self._init_collections()

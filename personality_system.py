@@ -3,15 +3,17 @@ Event-driven personality system that manages bot's personality states and transi
 Uses unified MemorySystem interface.
 """
 import logging
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional, Set, Any
 from datetime import datetime, timedelta
 import json
 import random
 from enum import Enum, auto
 from dataclasses import dataclass
 import uuid
+import os
 
 from memory_system import MemorySystem, Memory
+from anthropic import Anthropic
 
 logger = logging.getLogger(__name__)
 
@@ -54,31 +56,41 @@ class PersonalityMode:
 class PersonalitySystem:
     """Manages bot personality and state transitions"""
     
-    def __init__(self, memory_system: MemorySystem, anthropic_client=None):
+    def __init__(self, memory_system: MemorySystem, anthropic_client: Any):
         """Initialize personality system with unified memory system"""
-        self.memory = memory_system
-        self.current_state = self._initialize_state()
-        self.event_queue: List[PersonalityEvent] = []
-        self.last_transition = datetime.now()
-        self.last_state_update = datetime.now()
+        self.memory_system = memory_system
         self.anthropic_client = anthropic_client
-        
-        # Initialize personality state in memory system
-        self.memory.update_personality_state({
-            'mood': self.current_state['mood'],
-            'energy': self.current_state['energy'],
-            'focus': self.current_state['focus'],
-            'traits': self.current_state['traits']
-        })
-        
-        # Transition triggers
-        self.triggers = {
-            'negativity_threshold': 0.7,  # High negativity triggers transition
-            'success_threshold': 0.8,     # High success triggers transition
-            'energy_threshold': 0.3,      # Low energy triggers transition
-            'stress_threshold': 0.8,      # High stress triggers transition
-            'min_time_between_transitions': timedelta(hours=1)
-        }
+        self.current_state = {}
+
+    async def add_event(self, event: Dict[str, Any]) -> None:
+        """Add an event to the personality system"""
+        try:
+            # Validate event structure
+            required_fields = {'type', 'data', 'timestamp', 'source'}
+            if not all(field in event for field in required_fields):
+                raise ValueError(f"Event missing required fields: {required_fields - event.keys()}")
+
+            # Process the event
+            if event['type'] == 'timeline_analysis':
+                # Update current state based on timeline analysis
+                self.current_state.update({
+                    'last_timeline_analysis': event['data'],
+                    'last_timeline_timestamp': event['timestamp'],
+                    'timeline_context': event.get('context', {})
+                })
+
+            # Store event in memory system
+            await self.memory_system.add_memory({
+                'type': 'event',
+                'content': json.dumps(event['data']),
+                'timestamp': event['timestamp'],
+                'context': json.dumps(event.get('context', {})),
+                'source': event['source']
+            })
+
+        except Exception as e:
+            logger.error(f"Error adding personality event: {str(e)}")
+            raise
     
     def _initialize_state(self) -> Dict:
         """Initialize personality state"""
@@ -93,7 +105,7 @@ class PersonalitySystem:
                 'agreeableness': 0.7,
                 'neuroticism': 0.4
             },
-            'interests': set(),
+            'interests': list(),
             'relationships': {},
             'goals': [],
             'values': {
@@ -102,38 +114,6 @@ class PersonalitySystem:
                 'helpfulness': 0.7
             }
         }
-    
-    def add_event(self, event: PersonalityEvent):
-        """Add a new event that might influence personality"""
-        try:
-            # Add event to queue
-            self.event_queue.append(event)
-            
-            # Store event in memory system
-            memory = Memory(
-                id=str(uuid.uuid4()),
-                timestamp=event.timestamp,
-                type='personality_event',
-                content={
-                    'event_type': event.type,
-                    'intensity': event.intensity,
-                    'sentiment': event.sentiment,
-                    'metadata': event.metadata,
-                    'source': event.source
-                },
-                context={
-                    'mood': self.current_state['mood'],
-                    'energy': self.current_state['energy'],
-                    'focus': self.current_state['focus']
-                }
-            )
-            self.memory.add_memory(memory)
-            
-            # Process events
-            self._process_events()
-            
-        except Exception as e:
-            logger.error(f"Error adding personality event: {str(e)}")
     
     def _process_events(self):
         """Process queued events and update state"""
@@ -207,14 +187,28 @@ class PersonalitySystem:
     def _update_traits(self, negativity: float, success: float, stress: float):
         """Update personality traits based on events"""
         try:
-            # Update traits based on events
-            for trait in MoodType:
-                current = self.current_state['traits'][trait.name]
-                adjustment = random.uniform(-0.1, 0.1)
-                self.current_state['traits'][trait.name] = max(
-                    0.1,
-                    min(1.0, current + adjustment)
-                )
+            # Update base traits
+            traits = self.current_state['traits']
+            
+            # Adjust openness based on success
+            traits['openness'] = max(0.1, min(1.0, 
+                traits.get('openness', 0.5) + (success * 0.1)))
+            
+            # Adjust conscientiousness based on stress
+            traits['conscientiousness'] = max(0.1, min(1.0,
+                traits.get('conscientiousness', 0.5) - (stress * 0.1)))
+            
+            # Adjust extraversion based on success and negativity
+            traits['extraversion'] = max(0.1, min(1.0,
+                traits.get('extraversion', 0.5) + (success * 0.1) - (negativity * 0.1)))
+            
+            # Adjust agreeableness based on negativity
+            traits['agreeableness'] = max(0.1, min(1.0,
+                traits.get('agreeableness', 0.5) - (negativity * 0.2)))
+            
+            # Adjust neuroticism based on stress
+            traits['neuroticism'] = max(0.1, min(1.0,
+                traits.get('neuroticism', 0.5) + (stress * 0.2)))
             
         except Exception as e:
             logger.error(f"Error updating personality traits: {str(e)}")
@@ -260,9 +254,24 @@ class PersonalitySystem:
         except Exception as e:
             logger.error(f"Error in personality transition: {str(e)}")
             
-    def get_state(self) -> Dict:
+    async def get_state(self) -> Dict[str, Any]:
         """Get current personality state"""
-        return self.current_state.copy()
+        try:
+            # Get recent memories to inform state
+            recent_memories = await self.memory_system.get_recent_memories(hours=24)
+            
+            # Update state with recent memory context
+            state = self.current_state.copy()
+            state.update({
+                'recent_memory_count': len(recent_memories),
+                'last_update': datetime.now().isoformat()
+            })
+            
+            return state
+            
+        except Exception as e:
+            logger.error(f"Error getting personality state: {str(e)}")
+            return self.current_state.copy()
     
     def get_trait(self, trait: MoodType) -> float:
         """Get specific personality trait value"""
@@ -322,56 +331,68 @@ class PersonalitySystem:
             logger.error(f"Error deciding engagement: {str(e)}")
             return False
 
-    def generate_content(self, context: Dict) -> Optional[str]:
-        """Generate content based on personality and context using Claude"""
+    async def generate_content(self, context):
+        """Generate content using Claude"""
         try:
             if not self.anthropic_client:
                 logger.error("No Anthropic client available for content generation")
                 return None
-
-            # Get current mood and energy
+            
+            # Get personality factors
             mood = self.current_state.get('mood', 'neutral')
             energy = self.current_state.get('energy', 0.5)
+            traits = self.current_state.get('traits', {})
             
-            # Create prompt based on personality state
             prompt = f"""You are a tech-focused Twitter bot with the following personality state:
 Mood: {mood}
 Energy Level: {energy}
-Traits: {json.dumps(self.current_state.get('traits', {}))}
+Traits: {json.dumps(traits)}
 
-Generate a single tweet (max 280 chars) that:
-1. Is relevant to tech, coding, or AI
-2. Matches the current mood and energy level
-3. Encourages engagement and discussion
-4. Is authentic and thoughtful
+Generate a tweet that:
+1. Matches the current mood and energy level
+2. Aligns with our traits and interests
+3. Is engaging and authentic
+4. Stays under 280 characters
 5. Avoids controversy or negativity
 
 Current context:
 {json.dumps(context, indent=2)}
 
-Generate only the tweet text, no other commentary."""
+Respond with ONLY an XML tag containing the tweet text.
+Format your response exactly like this:
+<tweet_content>Your tweet text here</tweet_content>
 
-            response = self.anthropic_client.messages.create(
+Do not include any other text or explanation."""
+
+            # Get content from Claude
+            message = await self.anthropic_client.messages.create(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=300,
                 temperature=0.7,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ]
             )
             
-            tweet_text = response.content[0].text.strip()
-            if len(tweet_text) > 280:
-                tweet_text = tweet_text[:277] + "..."
-                
-            return tweet_text
-                
+            # Extract tweet content from response
+            response_text = message.content[0].text
+            tweet_content = response_text.split('<tweet_content>')[1].split('</tweet_content>')[0].strip()
+            
+            return tweet_content
+            
         except Exception as e:
             logger.error(f"Error generating content: {str(e)}")
             return None
 
-    def generate_reply(self, tweet: Dict, context: Dict) -> Optional[str]:
+    async def generate_reply(self, tweet: Dict, context: Dict) -> Optional[str]:
         """Generate a reply to a tweet using Claude"""
         try:
             if not self.anthropic_client:
@@ -402,23 +423,40 @@ The reply should:
 Current context:
 {json.dumps(context, indent=2)}
 
-Generate only the reply text, no other commentary."""
+Respond with ONLY an XML tag containing the reply text.
+Format your response exactly like this:
+<reply_content>Your reply text here</reply_content>
 
-            response = self.anthropic_client.messages.create(
+Do not include any other text or explanation."""
+
+            message = await self.anthropic_client.messages.create(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=300,
                 temperature=0.7,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ]
             )
             
-            reply_text = response.content[0].text.strip()
-            if len(reply_text) > 280:
-                reply_text = reply_text[:277] + "..."
-                
-            return reply_text
+            try:
+                response_text = message.content[0].text.strip()
+                if '<reply_content>' in response_text and '</reply_content>' in response_text:
+                    reply_text = response_text.split('<reply_content>')[1].split('</reply_content>')[0].strip()
+                    return reply_text
+                else:
+                    logger.error("Claude response did not contain proper XML tags")
+                    return None
+            except (ValueError, TypeError, IndexError) as e:
+                logger.error(f"Failed to parse reply from Claude response: {e}")
+                return None
                 
         except Exception as e:
             logger.error(f"Error generating reply: {str(e)}")
@@ -460,52 +498,105 @@ Generate only the reply text, no other commentary."""
             logger.error(f"Error calculating follow score: {str(e)}")
             return 0.0
 
-    def determine_sleep_duration(self, recent_activity: Dict) -> int:
+    async def determine_sleep_duration(self, recent_activity: Dict) -> int:
         """Use Claude to determine how long to sleep based on recent activity"""
         try:
             if not self.anthropic_client:
                 logger.error("No Anthropic client available")
                 return 900  # Default to 15 minutes
 
-            prompt = f"""As a Twitter bot, analyze my recent activity and recommend how long to sleep (in seconds) before the next iteration.
+            # Format recent activity for better decision making
+            formatted_activity = {
+                'last_tweet_time': recent_activity.get('last_tweet', {}).get('created_at') if recent_activity.get('last_tweet') else None,
+                'last_reply_time': recent_activity.get('last_reply', {}).get('created_at') if recent_activity.get('last_reply') else None,
+                'last_retweet_time': recent_activity.get('last_retweet', {}).get('created_at') if recent_activity.get('last_retweet') else None,
+                'last_quote_time': recent_activity.get('last_quote', {}).get('created_at') if recent_activity.get('last_quote') else None,
+                'current_hour': datetime.now().hour,
+                'current_mood': self.current_state.get('mood', 'neutral'),
+                'current_energy': self.current_state.get('energy', 0.5),
+                'rate_limited': any(v is None for v in recent_activity.values())
+            }
+
+            prompt = f"""Based on recent activity and current state, determine how long to sleep before next action.
 
 Recent Activity:
-{json.dumps(recent_activity, indent=2)}
+{json.dumps(formatted_activity, indent=2)}
 
 Consider:
-1. Time since last tweet/reply/like/retweet
-2. Current engagement levels
-3. Time of day
-4. Rate limit status
-5. Activity patterns of my followers
+1. Time since last action
+2. Current hour (for circadian rhythm)
+3. Rate limit status
+4. Energy level
+5. Mood
 
-Respond with ONLY a number representing seconds to sleep (between 300 and 3600).
+Return duration in seconds as an XML tag.
+Format your response exactly like this:
+<sleep_duration>900</sleep_duration>
+
+Guidelines:
+- Minimum: 300 seconds (5 minutes)
+- Maximum: 3600 seconds (1 hour)
+- If rate limited: at least 900 seconds
+- Late night (11pm-6am): longer durations
+- High energy: shorter durations
+- Low energy: longer durations
+
 Do not include any other text or explanation."""
 
-            response = self.anthropic_client.messages.create(
+            message = await self.anthropic_client.messages.create(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=100,
                 temperature=0.7,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ]
             )
-            
-            sleep_duration = int(response.content[0].text.strip())
-            # Ensure sleep duration is within reasonable bounds
-            return max(300, min(3600, sleep_duration))  # Between 5 minutes and 1 hour
-                
-        except Exception as e:
-            logger.error(f"Error determining sleep duration: {str(e)}")
-            return 900  # Default to 15 minutes if there's an error
 
-    def should_tweet_now(self, context: Dict) -> bool:
+            try:
+                response_text = message.content[0].text.strip()
+                # Extract duration from XML tag
+                if '<sleep_duration>' in response_text and '</sleep_duration>' in response_text:
+                    duration = int(response_text.split('<sleep_duration>')[1].split('</sleep_duration>')[0])
+                    return max(300, min(duration, 3600))  # Clamp between 5 minutes and 1 hour
+                else:
+                    logger.error("Claude response did not contain proper XML tags")
+                    return 900
+            except (ValueError, TypeError, IndexError) as e:
+                logger.error(f"Failed to parse sleep duration from Claude response: {e}")
+                return 900
+
+        except Exception as e:
+            logger.error(f"Error determining sleep duration: {e}")
+            return 900
+
+    async def should_tweet_now(self, context: Dict) -> bool:
         """Use Claude to decide whether to tweet based on current context"""
         try:
             if not self.anthropic_client:
                 logger.error("No Anthropic client available")
                 return False
+
+            # Get timeline state and check tweet frequency
+            timeline_analysis = context.get('timeline_analysis', {})
+            timeline_state = timeline_analysis.get('timeline_state', {})
+            
+            # If we've tweeted too much today, don't tweet
+            if timeline_state.get('should_wait', False):
+                logger.info(f"Not tweeting - already sent {timeline_state.get('our_tweets_24h', 0)} tweets in last 24h")
+                return False
+
+            # Convert sets to lists for JSON serialization
+            state_copy = self.current_state.copy()
+            if isinstance(state_copy.get('interests'), set):
+                state_copy['interests'] = list(state_copy['interests'])
 
             prompt = f"""As a Twitter bot, analyze the current context and decide if I should tweet now.
 
@@ -513,7 +604,7 @@ Current Context:
 {json.dumps(context, indent=2)}
 
 Personality State:
-{json.dumps(self.current_state, indent=2)}
+{json.dumps(state_copy, indent=2)}
 
 Consider:
 1. Time since last tweet
@@ -523,23 +614,71 @@ Consider:
 5. Ongoing conversations
 6. Time of day
 7. Current trending topics
+8. Our tweet frequency (aim for 8-12 tweets per day)
 
-Respond with ONLY 'yes' or 'no'.
+Important factors:
+- Tweet if post opportunity is above 0.1
+- Don't tweet if we've already posted {timeline_state.get('our_tweets_24h', 0)} tweets in last 24h
+- Consider joining active discussions in timeline
+
+Respond with ONLY an XML tag containing 'yes' or 'no'.
+Format your response exactly like this:
+<should_tweet>yes</should_tweet>
+or
+<should_tweet>no</should_tweet>
+
 Do not include any other text or explanation."""
 
-            response = self.anthropic_client.messages.create(
+            # Add detailed debug logging for the prompt
+            if logger.getEffectiveLevel() <= logging.DEBUG:
+                logger.debug("\n" + "="*50)
+                logger.debug("SHOULD TWEET DECISION")
+                logger.debug("="*50)
+                logger.debug("\nPROMPT:")
+                logger.debug("-"*50)
+                logger.debug(prompt)
+                logger.debug("-"*50)
+
+            message = await self.anthropic_client.messages.create(
                 model="claude-3-5-sonnet-20241022",
                 max_tokens=100,
                 temperature=0.7,
-                messages=[{
-                    "role": "user",
-                    "content": prompt
-                }]
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            }
+                        ]
+                    }
+                ]
             )
-            
-            decision = response.content[0].text.strip().lower()
-            return decision == 'yes'
-                
+
+            try:
+                response_text = message.content[0].text.strip()
+                # Add detailed debug logging for the response
+                if logger.getEffectiveLevel() <= logging.DEBUG:
+                    logger.debug("\nRESPONSE:")
+                    logger.debug("-"*50)
+                    logger.debug(response_text)
+                    logger.debug("-"*50)
+                    logger.debug("\n")
+
+                # Extract decision from XML tag
+                if '<should_tweet>' in response_text and '</should_tweet>' in response_text:
+                    decision = response_text.split('<should_tweet>')[1].split('</should_tweet>')[0].lower()
+                    if logger.getEffectiveLevel() <= logging.DEBUG:
+                        logger.debug(f"DECISION: {decision}")
+                    return decision == 'yes'
+                else:
+                    logger.error("Claude response did not contain proper XML tags")
+                    return False
+            except (ValueError, TypeError, IndexError) as e:
+                logger.error(f"Failed to parse tweet decision from Claude response: {e}")
+                return False
+
         except Exception as e:
-            logger.error(f"Error deciding whether to tweet: {str(e)}")
+            logger.error(f"Error deciding whether to tweet: {e}")
             return False

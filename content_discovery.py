@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Any
 import logging
 import asyncio
 from datetime import datetime, timedelta
@@ -6,9 +6,9 @@ import json
 import random
 from collections import defaultdict
 
-from twitter_utils import TwitterAPI
+from twitter_utils import TwitterClient
 from prompt_manager import PromptManager
-from personality_state import PersonalityState
+from personality_system import PersonalitySystem
 
 logger = logging.getLogger(__name__)
 
@@ -47,8 +47,8 @@ class ContentDiscovery:
     
     def __init__(
         self,
-        twitter_api: TwitterAPI,
-        personality: PersonalityState,
+        twitter_api: TwitterClient,
+        personality: PersonalitySystem,
         prompt_manager: PromptManager,
         db: Any,
         vector_store: Any

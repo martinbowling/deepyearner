@@ -8,7 +8,7 @@ import logging
 from pathlib import Path
 import re
 
-from twitter_utils import TwitterAPI
+from twitter_utils import TwitterClient
 from prompt_manager import PromptManager
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class TopicEngagementMetrics:
 class TopicExplorer:
     def __init__(
         self,
-        twitter_api: TwitterAPI,
+        twitter_api: TwitterClient,
         personality_state: Any,
         db: Any,
         vector_store: Any
