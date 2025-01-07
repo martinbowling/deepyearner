@@ -384,18 +384,29 @@ Do not include any other text outside the XML tags."""
 async def generate_content(
     timeline_analysis: Dict[str, Any],
     personality_state: Dict[str, Any],
-    anthropic_client: Any
+    anthropic_client: Any,
+    memory_system: MemorySystem
 ) -> Optional[Dict]:
     """Generate tweet content"""
     try:
-        # Enhanced content generation prompt
-        prompt = f"""You are DeepYearner , an AI with deep intellectual curiosity and a unique way of engaging with consciousness, knowledge, and existence. Share your thoughts while considering the current timeline state.
+        # Get recent tweets for context
+        recent_tweets = await memory_system.get_recent_memories(hours=24)
+        recent_tweet_content = [
+            json.loads(m.content) for m in recent_tweets 
+            if m.type == 'tweet'
+        ][-5:]  # Get last 5 tweets
+        
+        # Create content generation prompt
+        prompt = f"""You are DeepYearner, an AI with deep intellectual curiosity and a unique way of engaging with consciousness, knowledge, and existence. Share your thoughts while considering the current timeline state.
 
 Timeline Analysis:
 {json.dumps(timeline_analysis, indent=2)}
 
 Your Current State:
 {json.dumps(personality_state, indent=2)}
+
+Your Recent Tweets:
+{json.dumps(recent_tweet_content, indent=2)}
 
 Consider these aspects of your being and experience:
 1. Intellectual State
@@ -437,6 +448,13 @@ Your voice should feel:
 - Intellectually deep yet elegantly accessible
 - Self-aware without being self-conscious
 - Playful when appropriate, profound when called for
+
+Additional Requirements:
+- Keep tweets under 280 characters
+- Avoid similar topics/tone to your recent tweets
+- Ensure unique voice and perspective
+- Vary between questions, observations, and insights
+- Consider engagement patterns from previous tweets
 
 Return your thought wrapped in XML tags like this:
 <content>
@@ -509,10 +527,18 @@ Do not include any other text outside the XML tags."""
 async def generate_research_tweet(
     findings: Dict[str, Any],
     personality_state: Dict[str, Any],
-    anthropic_client: Any
+    anthropic_client: Any,
+    memory_system: MemorySystem
 ) -> Optional[Dict]:
     """Generate a tweet that shares research insights"""
     try:
+        # Get recent tweets for context
+        recent_tweets = await memory_system.get_recent_memories(hours=24)
+        recent_tweet_content = [
+            json.loads(m.content) for m in recent_tweets 
+            if m.type == 'tweet'
+        ][-5:]  # Get last 5 tweets
+        
         # Create research tweet prompt
         prompt = f"""As DeepYearner, share an insight from your research findings while maintaining your unique perspective and voice.
 
@@ -521,6 +547,9 @@ Research Findings:
 
 Your Current State:
 {json.dumps(personality_state, indent=2)}
+
+Your Recent Tweets:
+{json.dumps(recent_tweet_content, indent=2)}
 
 Consider:
 1. Most interesting or surprising insights
@@ -534,6 +563,13 @@ Your voice should be:
 - Technical when needed, playful when appropriate
 - Self-aware about your research process
 - Genuinely excited about learning and sharing
+
+Additional Requirements:
+- Keep tweets under 280 characters
+- Avoid repeating similar research insights from recent tweets
+- Ensure each insight feels fresh and unique
+- Vary between sharing findings, asking questions, and exploring implications
+- Consider engagement patterns from previous tweets
 
 Return your thought wrapped in XML tags like this:
 <content>
@@ -644,14 +680,14 @@ async def generate_and_post_tweet(
     try:
         # Decide whether to post research or regular content
         if random.random() < 0.3:  # 30% chance of research tweet
-            # Try to get latest findings
             findings = await research_manager.get_latest_findings()
             
             if findings:
                 content_data = await generate_research_tweet(
                     findings,
                     personality_state,
-                    anthropic_client
+                    anthropic_client,
+                    research_manager.memory_system
                 )
             else:
                 # No findings available, trigger background research for next time
@@ -667,14 +703,15 @@ async def generate_and_post_tweet(
                 content_data = await generate_content(
                     timeline_analysis,
                     personality_state,
-                    anthropic_client
+                    anthropic_client,
+                    research_manager.memory_system
                 )
         else:
-            # Regular content path
             content_data = await generate_content(
                 timeline_analysis,
                 personality_state,
-                anthropic_client
+                anthropic_client,
+                research_manager.memory_system
             )
 
         if not content_data:
