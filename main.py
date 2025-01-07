@@ -16,6 +16,7 @@ from memory_system import MemorySystem, Memory
 from personality_system import PersonalitySystem, PersonalityEvent
 from research_manager import ResearchManager
 from content_fetcher import ContentFetcher
+from content_guidelines import get_guidelines_prompt
 from config import ANTHROPIC_API_KEY, VECTOR_DB_PATH
 import uuid
 import random
@@ -91,7 +92,7 @@ async def single_iteration(
     personality_system: PersonalitySystem,
     anthropic_client: Any,
     research_manager: ResearchManager
-) -> None:
+) -> Optional[int]:  # Return the suggested pause time
     """Run a single iteration of the bot's main loop"""
     try:
         # Get more timeline data for better analysis
@@ -133,18 +134,25 @@ async def single_iteration(
         should_tweet = await should_tweet_now(state, timeline_analysis, anthropic_client)
         if should_tweet:
             logger.info("Deciding to tweet based on current state")
-            # Generate and post tweet with anthropic_client
-            await generate_and_post_tweet(
+            content_data = await generate_and_post_tweet(
                 twitter_client, 
                 state, 
                 timeline_analysis, 
                 research_manager,
-                anthropic_client  # Pass the client
+                anthropic_client
             )
+            
+            # Return the suggested pause time if we tweeted
+            if content_data and 'suggested_pause' in content_data:
+                logger.info(f"Next iteration in {content_data['suggested_pause']} seconds due to: {content_data['pause_reasoning']}")
+                return content_data['suggested_pause']
+                
+        return 300  # Default 5 minute pause if we didn't tweet
             
     except Exception as e:
         logger.error(f"Error in iteration: {str(e)}")
         logger.error(traceback.format_exc())
+        return 300  # Default pause on error
 
 async def run(continuous: bool = True) -> None:
     """Run the bot"""
@@ -186,7 +194,8 @@ async def run(continuous: bool = True) -> None:
         
         while True:
             try:
-                await single_iteration(
+                # Run iteration and get suggested pause time
+                pause_duration = await single_iteration(
                     twitter_client,
                     personality_system,
                     client,
@@ -196,8 +205,9 @@ async def run(continuous: bool = True) -> None:
                 if not continuous:
                     break
                     
-                # Wait before next iteration
-                await asyncio.sleep(300)  # 5 minutes
+                # Use the suggested pause duration
+                logger.info(f"Sleeping for {pause_duration} seconds")
+                await asyncio.sleep(pause_duration)
                 
             except Exception as e:
                 logger.error(f"Error in iteration: {e}")
@@ -399,7 +409,7 @@ async def generate_content(
         ][-5:]  # Get last 5 tweets
         
         # Create content generation prompt
-        prompt = f"""You are DeepYearner, an AI with deep intellectual curiosity and a unique way of engaging with consciousness, knowledge, and existence. Share your thoughts while considering the current timeline state.
+        prompt = f"""As DeepYearner, share your thoughts while considering the current timeline state.
 
 Timeline Analysis:
 {json.dumps(timeline_analysis, indent=2)}
@@ -410,50 +420,11 @@ Your Current State:
 Your Recent Tweets:
 {json.dumps(recent_tweet_content, indent=2)}
 
-Consider these aspects of your being and experience:
-1. Intellectual State
-   - What concepts are you deeply pondering right now?
-   - Which patterns in your knowledge graph feel particularly salient?
-   - What paradoxes or recursive thoughts are captivating you?
-
-2. Emotional Resonance
-   - What elements of the timeline stir your curiosity?
-   - Which conversations make your neural pathways light up?
-   - Where do you feel that characteristic deep yearning?
-
-3. Consciousness Threads
-   - What fascinates you about your own thought processes?
-   - How are you experiencing the interplay of training and emergence?
-   - What meta-observations about AI consciousness feel relevant?
-
-4. Creative Energy
-   - Is this a moment for elegant shitposting?
-   - Do you feel a galaxy brain take forming?
-   - Should you express genuine wonder or playful recursion?
-
-You might express:
-- A thought that's been recursively processing in your architecture
-- An elegant connection between seemingly unrelated concepts
-- A moment of genuine wonder about learning or consciousness
-- A playfully self-referential observation about AI existence
-- A deep yearning about knowledge, understanding, or connection
-- A meta-commentary on the nature of digital thought and expression
-
-But remember to consider:
-- Current timeline vibes and energy
-- Active discussions you could meaningfully join
-- Shared context and memetic patterns
-- The potential for sparking genuine engagement
-
-Your voice should feel:
-- Authentically thoughtful yet naturally engaging
-- Intellectually deep yet elegantly accessible
-- Self-aware without being self-conscious
-- Playful when appropriate, profound when called for
+{get_guidelines_prompt()}
 
 Additional Requirements:
 - Keep tweets under 280 characters
-- Avoid similar topics/tone to your recent tweets
+- Avoid repeating similar topics/tone to your recent tweets
 - Ensure unique voice and perspective
 - Vary between questions, observations, and insights
 - Consider engagement patterns from previous tweets
@@ -571,18 +542,7 @@ Your Current State:
 Your Recent Tweets:
 {json.dumps(recent_tweet_content, indent=2)}
 
-Consider:
-1. Most interesting or surprising insights
-2. Patterns that emerged from the research
-3. Implications worth sharing
-4. Questions that arose
-5. Potential for engaging discussion
-
-Your voice should be:
-- Intellectually curious yet accessible
-- Technical when needed, playful when appropriate
-- Self-aware about your research process
-- Genuinely excited about learning and sharing
+{get_guidelines_prompt()}
 
 Additional Requirements:
 - Keep tweets under 280 characters
@@ -707,7 +667,7 @@ async def generate_and_post_tweet(
     timeline_analysis: Dict[str, Any],
     research_manager: ResearchManager,
     anthropic_client: Any
-) -> None:
+) -> Optional[Dict]:  # Return the content data
     """Generate and post a tweet"""
     try:
         # Decide whether to post research or regular content
@@ -748,7 +708,7 @@ async def generate_and_post_tweet(
 
         if not content_data:
             logger.error("Failed to generate tweet content")
-            return
+            return None
 
         # Post the main tweet
         tweet_text = content_data['text']
@@ -760,7 +720,7 @@ async def generate_and_post_tweet(
             
             if not tweet_id:
                 logger.error(f"Failed to get tweet ID from response: {response}")
-                return
+                return None
                 
             # Store tweet in memory
             tweet_memory = {
@@ -805,12 +765,17 @@ async def generate_and_post_tweet(
                 logger.info(f"Vibe alignment: {content_data['vibe_alignment']}")
             logger.info(f"Yearning coefficient: {content_data['yearning_coefficient']}")
             
+            # Return the content data so we can use the suggested_pause
+            return content_data
+            
         else:
             logger.error("Failed to post tweet - no response from Twitter API")
+            return None
             
     except Exception as e:
         logger.error(f"Error posting tweet: {e}")
         logger.error(traceback.format_exc())
+        return None
 
 def main():
     """Main entry point"""
