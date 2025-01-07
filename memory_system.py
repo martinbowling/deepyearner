@@ -11,6 +11,7 @@ from dataclasses import dataclass, asdict, field
 import numpy as np
 import sqlite3
 import uuid
+import traceback
 
 logger = logging.getLogger(__name__)
 
@@ -78,30 +79,48 @@ class MemorySystem:
             logger.error(f"Error adding memory: {str(e)}")
             raise
 
-    async def get_recent_memories(self, hours: int = 24, limit: int = 100) -> List[Memory]:
-        """Get recent memories from the last N hours"""
+    async def get_recent_memories(
+        self,
+        hours: int = 24,
+        limit: int = 100,
+        memory_type: Optional[str] = None
+    ) -> List[Memory]:
+        """Get recent memories from the last N hours
+        
+        Args:
+            hours: Number of hours to look back
+            limit: Maximum number of memories to return
+            memory_type: Optional type of memory to filter by
+        """
         try:
             cursor = self.db.cursor()
-            cutoff = (datetime.now() - timedelta(hours=hours)).isoformat()
             
-            cursor.execute("""
+            # Build query based on parameters
+            query = """
                 SELECT id, type, content, timestamp, context, source
                 FROM memories
-                WHERE timestamp > ?
-                ORDER BY timestamp DESC
-                LIMIT ?
-            """, (cutoff, limit))
+                WHERE timestamp >= datetime('now', ?)
+            """
+            params = [f'-{hours} hours']
             
+            if memory_type:
+                query += " AND type = ?"
+                params.append(memory_type)
+                
+            query += " ORDER BY timestamp DESC LIMIT ?"
+            params.append(limit)
+            
+            cursor.execute(query, params)
             rows = cursor.fetchall()
-            memories = []
             
+            memories = []
             for row in rows:
                 memories.append(Memory(
                     id=row[0],
-                    type=row[1],
+                    type=row[1], 
                     content=row[2],
                     timestamp=row[3],
-                    context=json.loads(row[4]) if row[4] else {},
+                    context=row[4],
                     source=row[5]
                 ))
                 
@@ -109,6 +128,7 @@ class MemorySystem:
             
         except Exception as e:
             logger.error(f"Error getting recent memories: {str(e)}")
+            logger.error(traceback.format_exc())
             return []
 
     async def search_memories(self, query: str, limit: int = 10) -> List[Memory]:

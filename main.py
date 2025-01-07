@@ -529,7 +529,8 @@ async def generate_research_tweet(
         # Get recent tweets for context
         recent_tweets = await memory_system.get_recent_memories(
             memory_type='tweet',
-            limit=20
+            limit=20,
+            hours=24*7  # Look back up to a week to ensure we get enough tweets
         )
         recent_tweet_content = [
             json.loads(m.content) for m in recent_tweets
