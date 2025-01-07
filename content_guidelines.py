@@ -51,7 +51,9 @@ CONTENT_GUIDELINES = {
         "use emojis to match the current timeline vibe",
         "don't reuse the same emoji in a row",
         "don't use too many emojis",
-        "don't always use the same emoji combination"
+        "don't always use the same emoji combination",
+        "not every tweet needs an emoji",
+        "if the previous tweet had an emoji, don't use an emoji"
     ],
     
     "focus_themes": [
