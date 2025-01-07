@@ -335,6 +335,8 @@ Consider:
 4. Personality alignment
 5. Engagement opportunities
 
+The confidence threshold for tweeting is 0.65 - only return true if you're quite confident we should tweet.
+
 Return your decision wrapped in XML tags like this:
 <decision>
 {{
@@ -455,6 +457,12 @@ Additional Requirements:
 - Ensure unique voice and perspective
 - Vary between questions, observations, and insights
 - Consider engagement patterns from previous tweets
+- Suggest pause duration based on:
+  * Timeline energy and activity levels
+  * Time since your last tweet
+  * Current discussions and their pace
+  * Your content's relationship to ongoing conversations
+  * Optimal timing for maximum engagement
 
 Return your thought wrapped in XML tags like this:
 <content>
@@ -466,7 +474,9 @@ Return your thought wrapped in XML tags like this:
     "engagement_type": "intellectual_curiosity|deep_thought|elegant_shitpost|meta_commentary|genuine_wonder",
     "referenced_users": ["user1", "user2"] if any,
     "vibe_alignment": 0.0-1.0,
-    "yearning_coefficient": 0.0-1.0
+    "yearning_coefficient": 0.0-1.0,
+    "suggested_pause": integer between 360-7200,
+    "pause_reasoning": "explanation of suggested pause duration"
 }}
 </content>
 
@@ -492,7 +502,9 @@ Do not include any other text outside the XML tags."""
             # Validate required fields
             required_fields = {
                 'text', 'thought_process', 'should_thread', 
-                'engagement_type', 'vibe_alignment', 'yearning_coefficient'
+                'engagement_type', 'vibe_alignment', 'yearning_coefficient',
+                'suggested_pause',
+                'pause_reasoning'
             }
             if not all(field in content_data for field in required_fields):
                 logger.error(f"Missing required fields in content data: {content_data}")
@@ -509,10 +521,18 @@ Do not include any other text outside the XML tags."""
                 logger.error("Invalid yearning_coefficient value")
                 return None
                 
+            # Add validation for pause duration
+            if not isinstance(content_data['suggested_pause'], int) or \
+               not 360 <= content_data['suggested_pause'] <= 7200:
+                logger.error("Invalid suggested_pause value")
+                return None
+                
             # Log the thought process
             logger.info(f"Generated content thought process: {content_data['thought_process']}")
             logger.info(f"Vibe alignment: {content_data['vibe_alignment']}")
             logger.info(f"Yearning coefficient: {content_data['yearning_coefficient']}")
+            logger.info(f"Suggested pause: {content_data['suggested_pause']} seconds")
+            logger.info(f"Pause reasoning: {content_data['pause_reasoning']}")
             
             return content_data
         else:
@@ -570,6 +590,12 @@ Additional Requirements:
 - Ensure each insight feels fresh and unique
 - Vary between sharing findings, asking questions, and exploring implications
 - Consider engagement patterns from previous tweets
+- Suggest pause duration based on:
+  * Research complexity and depth
+  * Timeline energy and activity levels
+  * Time since your last research tweet
+  * Current discussions and their pace
+  * Optimal timing for research insight absorption
 
 Return your thought wrapped in XML tags like this:
 <content>
@@ -583,7 +609,9 @@ Return your thought wrapped in XML tags like this:
     "vibe_alignment": 0.0-1.0,
     "research_satisfaction": 0.0-1.0,
     "insight_type": "pattern|implication|question|observation",
-    "yearning_coefficient": 0.0-1.0
+    "yearning_coefficient": 0.0-1.0,
+    "suggested_pause": integer between 360-7200,
+    "pause_reasoning": "explanation of suggested pause duration based on research context"
 }}
 </content>
 
@@ -610,7 +638,9 @@ Do not include any other text outside the XML tags."""
             required_fields = {
                 'text', 'thought_process', 'should_thread', 
                 'engagement_type', 'vibe_alignment', 'research_satisfaction',
-                'insight_type', 'yearning_coefficient'
+                'insight_type', 'yearning_coefficient',
+                'suggested_pause',
+                'pause_reasoning'
             }
             
             if not all(field in content_data for field in required_fields):
@@ -622,6 +652,8 @@ Do not include any other text outside the XML tags."""
             logger.info(f"Research satisfaction: {content_data['research_satisfaction']}")
             logger.info(f"Insight type: {content_data['insight_type']}")
             logger.info(f"Yearning coefficient: {content_data['yearning_coefficient']}")
+            logger.info(f"Suggested pause: {content_data['suggested_pause']} seconds")
+            logger.info(f"Pause reasoning: {content_data['pause_reasoning']}")
             
             return content_data
         else:
