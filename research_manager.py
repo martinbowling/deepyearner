@@ -257,7 +257,7 @@ Return your analysis in this exact format:
                 self._update_topic_state(topic_obj, session, insights)
                 
                 # Store research memory
-                self._store_research_memory(topic_obj, session, insights)
+                await self._store_research_memory(topic_obj, session, insights)
                 
                 return insights
                 
@@ -315,14 +315,14 @@ Return your analysis in this exact format:
         # Update topic in storage
         self.research_topics[topic.topic] = topic
 
-    def _store_research_memory(
+    async def _store_research_memory(
         self,
         topic: ResearchTopic,
         session: ResearchSession,
         insights: Dict
     ):
         """Store research results in memory"""
-        self.memory_system.add_memory({
+        await self.memory_system.add_memory({
             'type': 'research',
             'topic': topic.topic,
             'timestamp': session.end_time,
