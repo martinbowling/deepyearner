@@ -48,16 +48,32 @@ class MemorySystem:
         try:
             # Convert dict to Memory object if needed
             if isinstance(memory_data, dict):
+                # Ensure content is serialized if it's a dict
+                content = memory_data['content']
+                if isinstance(content, dict):
+                    content = json.dumps(content)
+                
+                # Ensure context is serialized if it's a dict
+                context = memory_data.get('context', '{}')
+                if isinstance(context, dict):
+                    context = json.dumps(context)
+                
                 memory = Memory(
                     id=str(uuid.uuid4()),
                     type=memory_data['type'],
-                    content=memory_data['content'],
+                    content=content,
                     timestamp=memory_data['timestamp'],
-                    context=memory_data.get('context', '{}'),
+                    context=context,
                     source=memory_data.get('source', 'unknown')
                 )
             else:
                 memory = memory_data
+                # Ensure content is serialized if it's a dict
+                if isinstance(memory.content, dict):
+                    memory.content = json.dumps(memory.content)
+                # Ensure context is serialized if it's a dict
+                if isinstance(memory.context, dict):
+                    memory.context = json.dumps(memory.context)
 
             # Add to SQLite
             cursor = self.db.cursor()
@@ -70,13 +86,14 @@ class MemorySystem:
                 memory.type,
                 memory.content,
                 memory.timestamp,
-                json.dumps(memory.context) if isinstance(memory.context, dict) else memory.context,
+                memory.context if isinstance(memory.context, str) else json.dumps(memory.context),
                 memory.source
             ))
             self.db.commit()
 
         except Exception as e:
             logger.error(f"Error adding memory: {str(e)}")
+            logger.error(traceback.format_exc())
             raise
 
     async def get_recent_memories(

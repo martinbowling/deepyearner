@@ -322,22 +322,26 @@ Return your analysis in this exact format:
         insights: Dict
     ):
         """Store research results in memory"""
+        memory_content = {
+            'findings': insights['key_findings'],
+            'patterns': insights['patterns'],
+            'research_quality': insights['research_quality'],
+            'vibe_signature': insights['vibe_signature']
+        }
+        
+        memory_context = {
+            'research_depth': topic.research_depth,
+            'research_count': topic.research_count,
+            'session_duration': (session.end_time - session.start_time).seconds,
+            'content_count': len(session.content_found)
+        }
+        
         await self.memory_system.add_memory({
             'type': 'research',
             'topic': topic.topic,
-            'timestamp': session.end_time,
-            'content': {
-                'findings': insights['key_findings'],
-                'patterns': insights['patterns'],
-                'research_quality': insights['research_quality'],
-                'vibe_signature': insights['vibe_signature']
-            },
-            'metadata': {
-                'research_depth': topic.research_depth,
-                'research_count': topic.research_count,
-                'session_duration': (session.end_time - session.start_time).seconds,
-                'content_count': len(session.content_found)
-            }
+            'timestamp': session.end_time.isoformat(),
+            'content': json.dumps(memory_content),
+            'context': json.dumps(memory_context)
         })
 
     def get_related_topics(self, topic: str) -> List[str]:
