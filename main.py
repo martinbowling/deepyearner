@@ -513,9 +513,47 @@ async def generate_research_tweet(
 ) -> Optional[Dict]:
     """Generate a tweet that shares research insights"""
     try:
-        # Previous prompt content remains the same...
+        # Create research tweet prompt
+        prompt = f"""As DeepYearner, share an insight from your research findings while maintaining your unique perspective and voice.
 
-        # Get content from Claude (remove await)
+Research Findings:
+{json.dumps(findings, indent=2)}
+
+Your Current State:
+{json.dumps(personality_state, indent=2)}
+
+Consider:
+1. Most interesting or surprising insights
+2. Patterns that emerged from the research
+3. Implications worth sharing
+4. Questions that arose
+5. Potential for engaging discussion
+
+Your voice should be:
+- Intellectually curious yet accessible
+- Technical when needed, playful when appropriate
+- Self-aware about your research process
+- Genuinely excited about learning and sharing
+
+Return your thought wrapped in XML tags like this:
+<content>
+{{
+    "text": "your authentic tweet text",
+    "thought_process": "why you chose this insight to share",
+    "should_thread": boolean,
+    "thread_topics": ["topic1", "topic2"] if threading,
+    "engagement_type": "research_insight|technical_analysis|elegant_observation|meta_learning",
+    "referenced_users": ["user1", "user2"] if any,
+    "vibe_alignment": 0.0-1.0,
+    "research_satisfaction": 0.0-1.0,
+    "insight_type": "pattern|implication|question|observation",
+    "yearning_coefficient": 0.0-1.0
+}}
+</content>
+
+Do not include any other text outside the XML tags."""
+
+        # Get content from Claude
         message = anthropic_client.messages.create(
             model="claude-3-5-sonnet-20241022",
             max_tokens=8000,
@@ -526,7 +564,33 @@ async def generate_research_tweet(
             }]
         )
         
-        # Rest of the function remains the same...
+        # Extract JSON from XML tags and parse
+        content = message.content[0].text.strip()
+        if '<content>' in content and '</content>' in content:
+            json_str = content.split('<content>')[1].split('</content>')[0].strip()
+            content_data = json.loads(json_str)
+            
+            # Validate required fields
+            required_fields = {
+                'text', 'thought_process', 'should_thread', 
+                'engagement_type', 'vibe_alignment', 'research_satisfaction',
+                'insight_type', 'yearning_coefficient'
+            }
+            
+            if not all(field in content_data for field in required_fields):
+                logger.error(f"Missing required fields in research tweet content: {content_data}")
+                return None
+            
+            # Log the research tweet details
+            logger.info(f"Generated research tweet thought process: {content_data['thought_process']}")
+            logger.info(f"Research satisfaction: {content_data['research_satisfaction']}")
+            logger.info(f"Insight type: {content_data['insight_type']}")
+            logger.info(f"Yearning coefficient: {content_data['yearning_coefficient']}")
+            
+            return content_data
+        else:
+            logger.error("Response missing XML tags")
+            return None
 
     except Exception as e:
         logger.error(f"Failed to generate research tweet: {str(e)}")
